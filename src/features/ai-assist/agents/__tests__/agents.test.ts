@@ -188,7 +188,7 @@ describe('Creation DNA Agent', () => {
 
     expect(result.report).not.toBeNull();
     expect(result.report!.idea).toBe(MOCK_CREATION_DNA_REPORT.idea);
-    expect(result.report!.genre).toContain('Grounded Combat');
+    expect(result.report!.genre).toContain('Grounded Combat / Martial Realism');
     expect(result.report!.emotion).toContain('Found Family');
     expect(result.report!.comboStatus).toBe('UNTESTED');
     expect(result.report!.differentiators).toHaveLength(3);

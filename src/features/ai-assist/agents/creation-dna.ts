@@ -9,6 +9,7 @@
 import type { AgentChatModel } from './model-factory';
 import {
   CREATION_DNA_EMOTIONS,
+  CREATION_DNA_GENRE_GUIDE,
   CREATION_DNA_GENRES,
   CREATION_DNA_POWERS,
   CREATION_DNA_SCALES,
@@ -52,6 +53,9 @@ Controlled vocab only:
 - power: ${CREATION_DNA_POWERS.join(', ')}
 - vibe: ${CREATION_DNA_VIBES.join(', ')}
 
+Genre guide:
+${CREATION_DNA_GENRE_GUIDE.map(genre => `- ${genre.tag}: ${genre.description} Anchors: ${genre.anchors.join(', ')}`).join('\n')}
+
 Rules:
 - Do not invent tags outside the vocab
 - Pick tags that reveal the engine of the idea, not just surface aesthetics
@@ -62,7 +66,7 @@ Rules:
 function fallbackReport(state: CreationDnaState, reason: string): CreationDnaReport {
   return {
     idea: state.idea,
-    genre: ['Epic Adventure'],
+    genre: ['Epic Adventure / World-Saga'],
     emotion: ['Ambition'],
     scale: 'Personal',
     power: 'None',

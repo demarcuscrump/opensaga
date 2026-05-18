@@ -62,15 +62,88 @@ export type ProposalAnalysis = z.infer<typeof ProposalAnalysisSchema>;
 // ─── Creation DNA ───────────────────────────────────────────────────
 
 export const CREATION_DNA_GENRES = [
-  'Grounded Combat',
+  'Grounded Combat / Martial Realism',
   'Superpowered Battle',
-  'Epic Adventure',
-  'Dark Fantasy/Horror',
-  'Cyberpunk/Tech-Noir',
-  'Psychological Thriller',
+  'Epic Adventure / World-Saga',
+  'Dark Fantasy / Horror',
+  'Cyberpunk / Tech-Noir',
+  'Psychological / Cerebral Thriller',
   'Stylish Action',
-  'Slice-of-Life w/ Twist',
+  'Slice-of-Life With a Twist',
+  'Historical / Period Brutality',
+  'Surreal Weird Fiction',
+  'Sci-Fi Western / Space Frontier',
+  'Creature / Companion Adventure',
 ] as const;
+
+export type CreationDnaGenre = typeof CREATION_DNA_GENRES[number];
+
+export const CREATION_DNA_GENRE_GUIDE: ReadonlyArray<{
+  tag: CreationDnaGenre;
+  description: string;
+  anchors: readonly string[];
+}> = [
+  {
+    tag: 'Grounded Combat / Martial Realism',
+    description: 'Technique, training, physical consequence, and tactical fighting carry the drama more than supernatural spectacle.',
+    anchors: ['Baki', 'Kengan Ashura', 'Hajime no Ippo', 'The Fable'],
+  },
+  {
+    tag: 'Superpowered Battle',
+    description: 'Defined abilities, rivals, counters, tournaments, and escalating fights create the core engine.',
+    anchors: ['Jujutsu Kaisen', 'My Hero Academia', 'Dragon Ball Super', 'Naruto'],
+  },
+  {
+    tag: 'Epic Adventure / World-Saga',
+    description: 'A wide journey through factions, history, cultures, and locations where the world grows alongside the cast.',
+    anchors: ['One Piece', 'Fullmetal Alchemist', 'Hunter x Hunter'],
+  },
+  {
+    tag: 'Dark Fantasy / Horror',
+    description: 'Demons, curses, body horror, moral dread, and brutal costs make the world feel dangerous and unforgiving.',
+    anchors: ['Berserk', 'Chainsaw Man', 'Demon Slayer', 'Attack on Titan'],
+  },
+  {
+    tag: 'Cyberpunk / Tech-Noir',
+    description: 'Near-future or futuristic systems where surveillance, augmentation, corporate power, and identity collide.',
+    anchors: ['Ghost in the Shell', 'Akira', 'Cyberpunk: Edgerunners', 'Psycho-Pass'],
+  },
+  {
+    tag: 'Psychological / Cerebral Thriller',
+    description: 'Mind games, strategy, moral pressure, paranoia, and tension matter more than raw action.',
+    anchors: ['Death Note', 'Monster', 'Code Geass', 'The Fable'],
+  },
+  {
+    tag: 'Stylish Action',
+    description: 'Cool-factor, rhythm, swagger, choreography, and soundtrack energy define the experience.',
+    anchors: ['Samurai Champloo', 'Cowboy Bebop', 'Ninja Kamui', 'Cyberpunk: Edgerunners'],
+  },
+  {
+    tag: 'Slice-of-Life With a Twist',
+    description: 'Everyday routines, family, school, work, or domestic comedy are wrapped around a strange hidden premise.',
+    anchors: ['Spy x Family', 'Mob Psycho 100'],
+  },
+  {
+    tag: 'Historical / Period Brutality',
+    description: 'A real or invented past shapes the violence, politics, survival rules, and redemption arcs.',
+    anchors: ['Vinland Saga', 'Samurai Champloo', 'Golden Kamuy'],
+  },
+  {
+    tag: 'Surreal Weird Fiction',
+    description: 'Bizarre rules, grotesque humor, dream logic, and strange societies are the point rather than decoration.',
+    anchors: ['Dorohedoro', 'Mob Psycho 100', 'FLCL'],
+  },
+  {
+    tag: 'Sci-Fi Western / Space Frontier',
+    description: 'Frontier towns, bounty work, wandering crews, outlaws, and lonely technology give sci-fi a western spine.',
+    anchors: ['Trigun Stampede', 'Cowboy Bebop', 'Outlaw Star'],
+  },
+  {
+    tag: 'Creature / Companion Adventure',
+    description: 'Creatures, partners, teams, training, bonding, and discovery create the heart of the journey.',
+    anchors: ['Pokemon', 'Digimon'],
+  },
+];
 
 export const CREATION_DNA_EMOTIONS = [
   'Revenge',

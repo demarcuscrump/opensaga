@@ -8,6 +8,7 @@ import {
   ArchitectReportSchema,
   DeepenerResultSchema,
   ProposalAnalysisSchema,
+  CREATION_DNA_GENRE_GUIDE,
   CreationDnaReportSchema,
 } from '../schemas';
 
@@ -141,7 +142,7 @@ describe('ProposalAnalysisSchema', () => {
 describe('CreationDnaReportSchema', () => {
   const valid = {
     idea: 'A retired hitman protects his adopted daughter from an underground fight ring.',
-    genre: ['Grounded Combat', 'Cyberpunk/Tech-Noir'],
+    genre: ['Grounded Combat / Martial Realism', 'Cyberpunk / Tech-Noir'],
     emotion: ['Found Family', 'Redemption'],
     scale: 'Street-level',
     power: 'Tech-driven',
@@ -171,5 +172,13 @@ describe('CreationDnaReportSchema', () => {
     const parsed = CreationDnaReportSchema.parse(rawAgentOutput);
     expect(parsed.similar).toEqual([]);
     expect(parsed.comboStatus).toBe('UNTESTED');
+  });
+
+  it('documents every default genre with a grounded description', () => {
+    expect(CREATION_DNA_GENRE_GUIDE).toHaveLength(12);
+    for (const genre of CREATION_DNA_GENRE_GUIDE) {
+      expect(genre.description.length).toBeGreaterThan(40);
+      expect(genre.anchors.length).toBeGreaterThanOrEqual(2);
+    }
   });
 });

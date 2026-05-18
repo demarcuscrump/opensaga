@@ -86,7 +86,7 @@ export const MOCK_VISION_ANALYSIS = {
 
 export const MOCK_CREATION_DNA_REPORT = {
   idea: 'A retired hitman protects his adopted daughter from an underground fight ring.',
-  genre: ['Grounded Combat', 'Cyberpunk/Tech-Noir'],
+  genre: ['Grounded Combat / Martial Realism', 'Cyberpunk / Tech-Noir'],
   emotion: ['Found Family', 'Redemption'],
   scale: 'Street-level',
   power: 'Tech-driven',

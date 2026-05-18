@@ -214,6 +214,23 @@ Structured originality lens for concepts before they become characters, worlds, 
 - **Architecture note:** Implemented in the native TypeScript/Zod agent layer for alpha. Python/LangGraph/Chroma is deferred until OpenSaga has a backend orchestration service.
 - **Production path:** Move local vault comparison to Supabase/Postgres vector search when hosted collaboration needs shared originality checks
 
+#### Default Genre Lanes
+
+| Genre | Grounded Use |
+|---|---|
+| Grounded Combat / Martial Realism | Technique, training, physical consequence, and tactical fighting carry the drama more than supernatural spectacle. |
+| Superpowered Battle | Defined abilities, rivals, counters, tournaments, and escalating fights create the core engine. |
+| Epic Adventure / World-Saga | A wide journey through factions, history, cultures, and locations where the world grows alongside the cast. |
+| Dark Fantasy / Horror | Demons, curses, body horror, moral dread, and brutal costs make the world feel dangerous and unforgiving. |
+| Cyberpunk / Tech-Noir | Near-future or futuristic systems where surveillance, augmentation, corporate power, and identity collide. |
+| Psychological / Cerebral Thriller | Mind games, strategy, moral pressure, paranoia, and tension matter more than raw action. |
+| Stylish Action | Cool-factor, rhythm, swagger, choreography, and soundtrack energy define the experience. |
+| Slice-of-Life With a Twist | Everyday routines, family, school, work, or domestic comedy are wrapped around a strange hidden premise. |
+| Historical / Period Brutality | A real or invented past shapes the violence, politics, survival rules, and redemption arcs. |
+| Surreal Weird Fiction | Bizarre rules, grotesque humor, dream logic, and strange societies are the point rather than decoration. |
+| Sci-Fi Western / Space Frontier | Frontier towns, bounty work, wandering crews, outlaws, and lonely technology give sci-fi a western spine. |
+| Creature / Companion Adventure | Creatures, partners, teams, training, bonding, and discovery create the heart of the journey. |
+
 ---
 
 ### Module 5: Canon Check (Consistency Validator)

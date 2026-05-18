@@ -9,6 +9,7 @@ import type { AIProvider } from './AIEngine';
 import { worldsApi } from '../../services/api.worlds';
 import type { World } from '../../core/types';
 import { useAgents } from '../../hooks/useAgents';
+import { CREATION_DNA_GENRE_GUIDE } from './agents/schemas';
 import type { CanonReport, CreationDnaReport, DeepenerResult } from './agents/schemas';
 import type { VisionAnalysis } from './agents/orchestrator';
 import { AgentDebugPanel } from './AgentDebugPanel';
@@ -136,7 +137,7 @@ function scoreDnaSimilarity(report: CreationDnaReport, entry: CreationDnaVaultEn
 function isRareDnaCombo(report: CreationDnaReport) {
   return (
     (report.vibe.includes('Cozy') && report.vibe.includes('Brutal')) ||
-    (report.genre.includes('Slice-of-Life w/ Twist') && report.scale === 'World/Cosmic') ||
+    (report.genre.includes('Slice-of-Life With a Twist') && report.scale === 'World/Cosmic') ||
     (report.emotion.includes('Love') && report.power === 'Tech-driven' && report.vibe.includes('Minimalist'))
   );
 }
@@ -183,10 +184,14 @@ function evaluateDnaAgainstVault(report: CreationDnaReport, vault: CreationDnaVa
 function buildOfflineCreationDnaReport(idea: string): CreationDnaReport {
   const text = idea.toLowerCase();
   const genre: CreationDnaReport['genre'] = text.match(/neon|cyber|tech|augmented/)
-    ? ['Cyberpunk/Tech-Noir', 'Grounded Combat']
+    ? ['Cyberpunk / Tech-Noir', 'Grounded Combat / Martial Realism']
     : text.match(/fight|hitman|assassin|combat/)
-      ? ['Grounded Combat', 'Stylish Action']
-      : ['Epic Adventure'];
+      ? ['Grounded Combat / Martial Realism', 'Stylish Action']
+      : text.match(/creature|monster|companion|partner/)
+        ? ['Creature / Companion Adventure']
+        : text.match(/frontier|bounty|space|western/)
+          ? ['Sci-Fi Western / Space Frontier']
+          : ['Epic Adventure / World-Saga'];
   const emotion: CreationDnaReport['emotion'] = text.match(/daughter|family|friend|crew/)
     ? ['Found Family', 'Redemption']
     : text.match(/revenge|betray/)
@@ -1045,39 +1050,59 @@ export const CreatorStudioView = () => {
                       )}
                     </div>
 
-                    <div className="bg-surface-elevated border border-border rounded-xl p-4 h-fit">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-medium text-text-primary">DNA Vault</h4>
-                        <span className="text-[10px] text-text-tertiary">{dnaVault.length} saved</span>
-                      </div>
-                      {dnaVault.length === 0 ? (
-                        <div className="h-40 flex flex-col items-center justify-center text-text-tertiary text-center space-y-2">
-                          <Dna size={20} strokeWidth={1} />
-                          <p className="text-xs">Saved DNA cards appear here.</p>
+                    <div className="space-y-4">
+                      <div className="bg-surface-elevated border border-border rounded-xl p-4 h-fit">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-text-primary">DNA Vault</h4>
+                          <span className="text-[10px] text-text-tertiary">{dnaVault.length} saved</span>
                         </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {dnaVault.slice(0, 6).map(entry => (
-                            <button
-                              key={entry.id}
-                              onClick={() => {
-                                setDnaIdea(entry.idea);
-                                setDnaReport(evaluateDnaAgainstVault(entry, dnaVault.filter(item => item.id !== entry.id)));
-                                setDnaReviewNotes(entry.humanNotes);
-                              }}
-                              className="w-full text-left p-3 rounded-lg border border-border bg-surface-overlay hover:border-border-accent transition-colors"
-                            >
-                              <div className="text-xs font-medium text-text-primary line-clamp-1">{entry.name}</div>
-                              <div className="text-[10px] text-text-tertiary mt-1 line-clamp-2">{entry.pitch}</div>
+                        {dnaVault.length === 0 ? (
+                          <div className="h-40 flex flex-col items-center justify-center text-text-tertiary text-center space-y-2">
+                            <Dna size={20} strokeWidth={1} />
+                            <p className="text-xs">Saved DNA cards appear here.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {dnaVault.slice(0, 6).map(entry => (
+                              <button
+                                key={entry.id}
+                                onClick={() => {
+                                  setDnaIdea(entry.idea);
+                                  setDnaReport(evaluateDnaAgainstVault(entry, dnaVault.filter(item => item.id !== entry.id)));
+                                  setDnaReviewNotes(entry.humanNotes);
+                                }}
+                                className="w-full text-left p-3 rounded-lg border border-border bg-surface-overlay hover:border-border-accent transition-colors"
+                              >
+                                <div className="text-xs font-medium text-text-primary line-clamp-1">{entry.name}</div>
+                                <div className="text-[10px] text-text-tertiary mt-1 line-clamp-2">{entry.pitch}</div>
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {[...entry.genre, entry.scale].slice(0, 3).map(tag => (
+                                    <span key={tag} className="px-1.5 py-0.5 rounded bg-accent-muted text-[9px] text-accent-primary">{tag}</span>
+                                  ))}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-surface-elevated border border-border rounded-xl p-4">
+                        <h4 className="text-sm font-medium text-text-primary">Genre Guide</h4>
+                        <p className="text-[11px] text-text-tertiary mt-1 mb-3">Default lanes for creators who want strong starting points.</p>
+                        <div className="space-y-3 max-h-[32rem] overflow-y-auto no-scrollbar pr-1">
+                          {CREATION_DNA_GENRE_GUIDE.map(genre => (
+                            <div key={genre.tag} className="border-b border-border/70 pb-3 last:border-b-0 last:pb-0">
+                              <div className="text-xs font-medium text-text-primary">{genre.tag}</div>
+                              <p className="text-[11px] text-text-tertiary leading-relaxed mt-1">{genre.description}</p>
                               <div className="flex flex-wrap gap-1.5 mt-2">
-                                {[...entry.genre, entry.scale].slice(0, 3).map(tag => (
-                                  <span key={tag} className="px-1.5 py-0.5 rounded bg-accent-muted text-[9px] text-accent-primary">{tag}</span>
+                                {genre.anchors.slice(0, 3).map(anchor => (
+                                  <span key={anchor} className="px-1.5 py-0.5 rounded bg-surface-overlay border border-border text-[9px] text-text-secondary">{anchor}</span>
                                 ))}
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
