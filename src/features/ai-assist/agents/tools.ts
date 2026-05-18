@@ -1,7 +1,7 @@
 /**
  * Agent Tools — Supabase-backed tools for auto-context fetching
  *
- * These tools allow LangGraph agents to autonomously pull context
+ * These tools allow agent workflows to autonomously pull context
  * from the database instead of requiring the user to paste text.
  *
  * Per CREATOR_STUDIO_PRD.md §Context Injection:
@@ -9,9 +9,12 @@
  *  Tool-specific system prompt"
  */
 
-import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { supabase, isSupabaseConfigured } from '../../../lib/supabase';
+
+function tool<TArgs>(invoke: (args: TArgs) => Promise<string>, _metadata: unknown) {
+  return { invoke };
+}
 
 // ─── Fetch World Bible ──────────────────────────────────────────────
 
@@ -59,7 +62,7 @@ export const fetchWorldBible = tool(
 // ─── Fetch Canon Entities ───────────────────────────────────────────
 
 export const fetchCanonEntities = tool(
-  async ({ worldId, entityType }: { worldId: string; entityType?: string }): Promise<string> => {
+  async ({ worldId, entityType }: { worldId: string; entityType?: 'CHARACTER' | 'LORE' | 'FACTION' }): Promise<string> => {
     if (!isSupabaseConfigured) {
       return '[No Supabase configured — Canon entities unavailable.]';
     }

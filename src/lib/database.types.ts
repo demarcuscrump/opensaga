@@ -35,6 +35,7 @@ export interface Database {
           role?: 'CREATOR' | 'LOREKEEPER' | 'ARCHITECT' | 'CITIZEN' | 'WANDERER';
           reputation?: number;
         };
+        Relationships: [];
       };
       worlds: {
         Row: {
@@ -70,6 +71,7 @@ export interface Database {
           governance?: 'CREATOR_APPROVED' | 'COMMUNITY_VOTE' | 'LOREKEEPER_COUNCIL';
           voting_threshold?: number;
         };
+        Relationships: [];
       };
       bible_sections: {
         Row: {
@@ -96,6 +98,7 @@ export interface Database {
           sort_order?: number;
           updated_at?: string;
         };
+        Relationships: [];
       };
       entities: {
         Row: {
@@ -129,6 +132,7 @@ export interface Database {
           voting_ends_at?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
       };
       votes: {
         Row: {
@@ -148,6 +152,7 @@ export interface Database {
         Update: {
           vote_type?: 'UP' | 'DOWN';
         };
+        Relationships: [];
       };
       memberships: {
         Row: {
@@ -165,6 +170,7 @@ export interface Database {
         Update: {
           role?: string;
         };
+        Relationships: [];
       };
       activity: {
         Row: {
@@ -190,7 +196,26 @@ export interface Database {
         Update: {
           metadata?: Json;
         };
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      increment_reputation: {
+        Args: {
+          target_user_id: string;
+          amount: number;
+        };
+        Returns: undefined;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

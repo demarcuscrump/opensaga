@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Key, ShieldAlert } from 'lucide-react';
 import { useAIStore } from '../../store/aiStore';
 import { Button, Input, Select } from '../../components';
+import type { AIProvider } from './AIEngine';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,7 +10,18 @@ interface SettingsModalProps {
 }
 
 export const AISettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { provider, apiKey, setProvider, setApiKey } = useAIStore();
+  const {
+    provider,
+    apiKey,
+    model,
+    endpoint,
+    temperature,
+    setProvider,
+    setApiKey,
+    setModel,
+    setEndpoint,
+    setTemperature,
+  } = useAIStore();
 
   if (!isOpen) return null;
 
@@ -32,29 +44,69 @@ export const AISettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose 
           <div className="p-4 bg-accent-muted border border-border-accent rounded-lg flex gap-3">
             <ShieldAlert className="text-accent-primary shrink-0 mt-0.5" size={16} />
             <p className="text-xs text-text-secondary leading-relaxed">
-              OpenSaga uses a Bring-Your-Own-Key (BYOK) model. Your key is stored securely in your browser's local storage and is never sent to our servers.
+              OpenSaga uses a Bring-Your-Own-Key model. Keys stay in this browser's local storage and are never sent to OpenSaga servers.
             </p>
           </div>
 
           <Select 
             label="Active Provider"
             value={provider}
-            onChange={(e) => setProvider(e.target.value as any)}
+            onChange={(e) => setProvider(e.target.value as AIProvider)}
             options={[
               { value: 'mock', label: 'Mock Engine (Local Testing)' },
-              { value: 'openai', label: 'OpenAI (GPT-4)' },
-              { value: 'anthropic', label: 'Anthropic (Claude 3)' },
+              { value: 'openai', label: 'OpenAI' },
+              { value: 'anthropic', label: 'Anthropic' },
+              { value: 'openrouter', label: 'OpenRouter' },
+              { value: 'ollama', label: 'Ollama (Local)' },
             ]}
           />
 
           {provider !== 'mock' && (
-            <Input 
-              label="API Key" 
-              type="password"
-              placeholder="sk-..." 
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
+            <div className="space-y-4">
+              {provider !== 'ollama' && (
+                <Input 
+                  label="API Key" 
+                  type="password"
+                  placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'} 
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+              )}
+
+              <Input
+                label="Model"
+                value={model}
+                placeholder={
+                  provider === 'openrouter'
+                    ? 'openai/gpt-4o'
+                    : provider === 'anthropic'
+                      ? 'claude-sonnet-4-20250514'
+                      : provider === 'ollama'
+                        ? 'llama3'
+                        : 'gpt-4o'
+                }
+                onChange={(e) => setModel(e.target.value)}
+              />
+
+              {provider === 'ollama' && (
+                <Input
+                  label="Endpoint"
+                  value={endpoint}
+                  placeholder="http://localhost:11434"
+                  onChange={(e) => setEndpoint(e.target.value)}
+                />
+              )}
+
+              <Input
+                label="Temperature"
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+                value={temperature}
+                onChange={(e) => setTemperature(Number(e.target.value))}
+              />
+            </div>
           )}
 
           <div className="pt-4 border-t border-border flex justify-end">

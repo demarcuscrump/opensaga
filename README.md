@@ -9,77 +9,63 @@ An open-source collaborative universe-building platform where communities create
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vite.dev)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![Zustand](https://img.shields.io/badge/Zustand-5-764ABC?logo=react)](https://github.com/pmndrs/zustand)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Alpha-orange)]()
+[![Status](https://img.shields.io/badge/Status-Alpha%20Production%20Track-orange)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen)]()
 
 </div>
 
 ---
 
-## The Problem
+## What It Is
 
-Worldbuilding is a collaborative act trapped in solo tools. Writers use Google Docs. TTRPG groups use Discord threads. Manga creators use group chats. Fandoms use wikis with no governance.
+OpenSaga is a community-governed worldbuilding platform. A creator starts a World, defines a World Bible, and invites others to submit characters, lore, factions, and other entries. Contributions move through a Proposal -> Vote -> Canon loop so communities can grow shared fictional universes without losing the source of truth.
 
-The result: lore contradictions, no canonical authority, fragmented content, and creative communities that can't scale beyond a handful of people.
-
-## The Solution
-
-OpenSaga is a **community-governed worldbuilding platform**. A creator starts a World. They write a World Bible — the canonical source of truth. Then the community joins. Members submit Proposals (characters, lore, factions, locations). The community votes. If a Proposal passes the threshold, it becomes **Canon** — permanent, official, part of the world's history.
-
-Every World chooses its own governance:
-
-- **Creator Dictatorship** — The original creator has absolute authority
-- **Democracy** — Community votes decide Canon (configurable threshold)
-- **Lorekeeper Council** — A trusted group of high-reputation curators decide
+The long-term goal is a production-ready open-source platform for anime, manga, comic, tabletop RPG, writer, and fandom communities.
 
 ---
 
-## Who This Is For
+## Current Status
 
-| Audience | Use Case |
-|---|---|
-| **Anime & Manga Creators** | Build character rosters, power systems, and shared universes with visual character creation |
-| **Tabletop RPG Groups** | Manage shared campaign worlds with structured governance and session-linked canon |
-| **Worldbuilding Enthusiasts** | Build universes too big for one person — lore, factions, timelines, geography |
-| **Writer Collectives** | Collaborate on shared-universe anthologies with proposal/approval workflow |
-| **Fandom Communities** | Create and govern fan-canon with community voting and reputation |
+OpenSaga is no longer just a static prototype. The current alpha includes a real React app, Supabase-backed service layer, auth context, governance APIs, a BYOK AI layer, lightweight agent workflows, a production Tailwind build pipeline, route-level bundle splitting, and automated tests.
+
+It is still pre-public-beta. Before production launch, the project needs a hosted Supabase project, OAuth provider configuration, RLS/security review, production deployment, broader governance E2E coverage, and an accessibility pass.
 
 ---
 
-## Core Features
+## Implemented Today
 
-### Worlds & World Bibles
-Every universe starts with a World. The World Bible is the constitution — it defines the rules, history, geography, magic/tech systems, and tone. Every Proposal is judged against it.
+### Worlds, Proposals, and Canon
+- World discovery, world hubs, profile views, proposal creation, and voting UI.
+- Supabase migrations for profiles, worlds, bible sections, entities, votes, memberships, and activity.
+- Service APIs for worlds, characters/entities, profiles, memberships, votes, activity, and governance.
+- Proposal tallying logic with threshold-based Canon or Rejected transitions.
+- Supabase Edge Function scaffold for automated proposal tallying.
 
-### Proposals & Canon Voting
-Content is never just "added." It is proposed, reviewed, and voted on. If it passes the World's voting threshold, it transitions from Proposal to Canon — the permanent record.
+### Authentication and Profiles
+- Supabase auth context with session management.
+- Protected routes for creation, studio, and profile surfaces.
+- OAuth sign-in hooks for GitHub, Discord, and Google when Supabase is configured.
+- Offline/demo mode fallback when Supabase environment variables are not configured.
 
-### Flexible Governance
-Not every universe should be a democracy. OpenSaga supports multiple governance models so each World operates the way its community prefers.
+### Creator Studio
+- Multi-tool creative workspace with Character Forge, World Seed, Lore Crafter, Brainstorm, and Canon Check.
+- Draft persistence through local storage.
+- Character export options.
+- Image analysis path for character references.
+- Agent debug logging and streaming hooks.
 
-### Creator Studio (AI-Powered)
-A dedicated creative workspace with specialized tools:
-- **Character Forge** — Multi-tab character builder (identity, appearance, backstory, abilities, stats, relationships)
-- **World Seed** — Structured World Bible editor with 8 sections
-- **Lore Crafter** — Templates for historical events, technology, mythology, factions
-- **Brainstorm Engine** — AI-assisted plot hooks, faction ideas, story arcs
-- **Canon Check** — Validate proposals against the World Bible for consistency
-- **Relationship Mapper** — Visual character connection graphs
-- **Power System Generator** — Design magic/tech frameworks with rules and limitations
-- **Species Builder** — Custom species with biology, culture, and naming conventions
+### BYOK AI
+- Provider-agnostic AI engine with OpenAI, Anthropic, OpenRouter, Ollama, and mock adapters.
+- Lightweight agent layer for canon checks, world architecture, character deepening, proposal analysis, and vision analysis.
+- User API keys stay in the browser's local storage and are never sent to OpenSaga servers. Local storage is convenient, but not a hardened secret vault; production deployments should pair this with a strong CSP and XSS review.
 
-### Bring Your Own Key (BYOK)
-OpenSaga is provider-agnostic. Plug in OpenAI, Anthropic, Ollama, or any OpenRouter-compatible model. API keys stay in your browser — never touch our servers. AI is optional — the platform is fully functional without it.
-
-### Reputation & Profiles
-Users earn reputation through successful Canon proposals. Profiles showcase created Worlds, Characters, and community standing. Roles progress: Wanderer → Citizen → Architect → Lorekeeper → Creator.
-
-### Dual-Theme Design System
-- **Noir** (default) — Deep, cinematic dark mode. Like editing in a film studio at 2am.
-- **Paper** — Clean, warm light mode. Like a manuscript on aged paper.
+### Quality Gates
+- Vitest test suite for agent schemas, model factory, logging, streaming, rate limiting, and workflows.
+- Playwright smoke E2E tests for navigation, discovery, creation, and Creator Studio settings.
+- TypeScript typecheck script.
+- GitHub Actions CI for install, typecheck, test, build, and Playwright E2E.
 
 ---
 
@@ -87,42 +73,48 @@ Users earn reputation through successful Canon proposals. Profiles showcase crea
 
 | Layer | Technology |
 |---|---|
-| **Framework** | React 19 + TypeScript 5.8 |
-| **Build** | Vite 6 |
-| **Routing** | React Router v7 |
-| **Styling** | TailwindCSS (custom semantic token system) |
-| **Client State** | Zustand 5 (persisted) |
-| **Server State** | TanStack React Query v5 |
-| **Backend** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
-| **AI Engine** | Provider-agnostic BYOK (OpenAI, Anthropic, Ollama adapters) |
-| **Architecture** | Feature-Sliced Design (FSD) |
+| Framework | React 19 + TypeScript 5.8 |
+| Build | Vite 6 |
+| Routing | React Router v7 |
+| Styling | Tailwind CSS via Vite/PostCSS, semantic CSS tokens, dual Noir/Paper themes |
+| Client State | Zustand 5 |
+| Server State | TanStack React Query v5 |
+| Backend | Supabase Postgres, Auth, RLS, Edge Functions |
+| AI | BYOK adapters plus lightweight agent workflows |
+| Tests | Vitest, Testing Library, jsdom, Playwright |
+
+Tailwind is built through Vite/PostCSS with content scanning in `tailwind.config.cjs`.
 
 ---
 
 ## Project Structure
 
-```
+```text
 src/
-├── app/                    # App shell, routing, layout, sidebar, mobile nav
-├── core/                   # Types, constants, seed data
-│   ├── data/               # Standard libraries (powers, archetypes, species)
-│   └── types.ts            # Domain models (World, Character, Proposal, User)
-├── components/             # Reusable UI (Button, Input, Card, Badge, Toast)
-├── features/
-│   ├── worlds/             # Landing, Discovery, World Hub (5 tabs)
-│   ├── proposals/          # Multi-step creation flow, Voting progress
-│   ├── users/              # User profiles, reputation
-│   ├── ai-assist/          # Creator Studio, AIEngine interface, BYOK settings
-│   └── auth/               # Authentication (Supabase OAuth)
-├── services/               # API abstraction layer
-└── store/                  # Zustand stores (UI config, AI state)
+  app/                    App shell, routes, layout, navigation
+  components/             Reusable UI components
+  core/                   Domain types, constants, seed data
+  features/
+    ai-assist/            Creator Studio, AI engine, agents, settings
+    auth/                 Login and protected-route flows
+    proposals/            Proposal creation and voting UI
+    users/                Profiles and reputation UI
+    worlds/               Landing, discovery, world hub, activity
+  hooks/                  Agent, voting, membership hooks
+  lib/                    Supabase client, auth provider, database types
+  services/               Supabase-backed API abstractions
+  store/                  Zustand stores
+
+supabase/
+  migrations/             Database schema and RPC migrations
+  functions/              Edge Function for automated proposal tallying
 ```
 
 ---
 
 ## Quick Start
 
-**Prerequisites:** Node.js 18+
+**Prerequisites:** Node.js 20+ recommended.
 
 ```bash
 git clone https://github.com/demarcuscrump/opensaga.git
@@ -131,7 +123,27 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:3000`.
+The Vite dev server runs at `http://localhost:3000`.
+
+OpenSaga can run without Supabase credentials in offline/demo mode. To connect a Supabase project:
+
+```bash
+cp .env.example .env.local
+```
+
+Then fill in:
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+Run the full local verification suite:
+
+```bash
+npm run check
+npm run test:e2e
+```
 
 ---
 
@@ -139,56 +151,48 @@ Opens at `http://localhost:3000`.
 
 | Document | Description |
 |---|---|
-| [OPENSAGA_RULES.md](./OPENSAGA_RULES.md) | Master product rules — identity, UX, design system, technical standards |
-| [CREATOR_STUDIO_PRD.md](./CREATOR_STUDIO_PRD.md) | Full Creator Studio specification — Character Forge, World Seed, all 8 AI tools |
-| [COPYWRITING_GUIDE.md](./COPYWRITING_GUIDE.md) | Brand voice, vocabulary, microcopy patterns, tone calibration |
-| [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) | Honest audit, scorecard, gap analysis, implementation roadmap |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture — FSD, state management, AI engine |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines for developers, designers, and writers |
+| [OPENSAGA_RULES.md](./OPENSAGA_RULES.md) | Product rules, positioning, UX principles, design standards |
+| [CREATOR_STUDIO_PRD.md](./CREATOR_STUDIO_PRD.md) | Creator Studio product spec and phased roadmap |
+| [COPYWRITING_GUIDE.md](./COPYWRITING_GUIDE.md) | Brand voice, vocabulary, microcopy patterns |
+| [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) | Current readiness audit, risks, and launch checklist |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, data flow, AI layer, boundaries |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution workflow and PR expectations |
 | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community standards |
 
 ---
 
 ## Roadmap
 
-### Completed (Alpha)
-- [x] Feature-Sliced Architecture with 7 routes
-- [x] Landing page, Discovery feed, World Hub (Overview, Bible, Characters, Activity, Governance)
-- [x] Multi-step World & Character creation flow with progress indicators
-- [x] Community voting UI with real-time consensus progress bars
-- [x] User profiles with stats, bio, and reputation display
-- [x] BYOK AI engine abstraction (interface + mock provider)
-- [x] Creator Studio (basic prompt/output workspace)
-- [x] Dual-theme design system (Noir + Paper) with semantic tokens
-- [x] Desktop sidebar + mobile bottom navigation
-- [x] Full open-source documentation suite
+### Alpha Complete
+- [x] React/Vite application shell with desktop and mobile navigation
+- [x] World discovery, world hub, proposals, voting UI, profiles
+- [x] Supabase schema, RLS policies, API layer, auth context
+- [x] Proposal vote tallying and reputation update logic
+- [x] Creator Studio MVP with five active creation tools
+- [x] BYOK AI adapters for OpenAI, Anthropic, OpenRouter, Ollama, and mock mode
+- [x] Lightweight agent workflows with structured Zod output validation
+- [x] Tailwind Vite/PostCSS pipeline with CDN removed
+- [x] Route-level lazy loading and manual vendor bundle splitting
+- [x] Vitest suite, Playwright smoke E2E, TypeScript typecheck, and GitHub Actions CI
+- [x] MIT license and open-source contribution docs
 
-### In Progress (v1.0)
-- [ ] Supabase backend (PostgreSQL + RLS + Edge Functions)
-- [ ] Authentication (GitHub, Discord, Google OAuth)
-- [ ] Creator Studio rebuild (Character Forge, World Seed, 8 AI tools)
-- [ ] Real BYOK AI adapters (OpenAI, Anthropic, OpenRouter, Ollama)
-- [ ] Proposal → Vote → Canon pipeline (real persistence + enforcement)
-- [ ] World membership and invitation system
-- [ ] Search and filtering
-- [ ] Test suite (Vitest + Playwright, 80+ tests target)
-- [ ] CI/CD (GitHub Actions → Vercel)
+### Before Public Beta
+- [ ] Configure hosted Supabase project and OAuth providers
+- [ ] Run RLS/security review against real project data
+- [ ] Expand Playwright E2E to cover create world -> submit proposal -> vote -> canon
+- [ ] Add documented bundle budgets and optional bundle analysis
+- [ ] Add accessibility pass across navigation, forms, modals, and mobile flows
+- [ ] Add search/filtering across worlds and entities
+- [ ] Add Realtime subscriptions for active vote updates
+- [ ] Deploy preview and production environments
 
-### Future (v1.1+)
-- [ ] Cross-world character migration (with governance approval)
-- [ ] Visual timeline / relationship graph
-- [ ] Embeddable World Bible widgets
-- [ ] Plugin system for custom governance
-- [ ] Public API for third-party integrations
-- [ ] AI image generation integration
-- [ ] Collaborative real-time editing
-- [ ] Export as PDF / ePub / JSON
-
----
-
-## Contributing
-
-We welcome contributions from developers, designers, writers, and worldbuilders of all skill levels. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting a pull request, and review our [Code of Conduct](./CODE_OF_CONDUCT.md).
+### Later
+- [ ] Relationship graph and timeline views
+- [ ] Power system and species builder modules
+- [ ] Rich text/markdown editor for World Bible sections
+- [ ] Supabase Storage for images and assets
+- [ ] Plugin system for custom governance rules
+- [ ] Public API and export formats
 
 ---
 
@@ -196,4 +200,4 @@ We welcome contributions from developers, designers, writers, and worldbuilders 
 
 OpenSaga is released under the [MIT License](./LICENSE).
 
-Code is open source. Worlds created by users belong to their creators.
+Code is open source. Worlds, characters, lore, and other content created by users belong to their creators.

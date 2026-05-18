@@ -1,11 +1,11 @@
 /**
- * useAgents — React hook for the LangGraph multi-agent orchestrator.
+ * useAgents — React hook for the lightweight multi-agent orchestrator.
  *
  * Wraps each agent call with loading/error state management.
- * Uses the LangGraph StateGraph agents with:
+ * Uses the lightweight agent workflows with:
  *   - Auto-context fetching from Supabase (no manual pasting)
  *   - Zod-validated structured output
- *   - Retry logic built into the graphs
+ *   - Retry logic built into the workflows
  *   - Multi-agent pipelines (Creation, Review)
  */
 
@@ -17,6 +17,7 @@ import {
   type ArchitectReport,
   type DeepenerResult,
   type ProposalAnalysis,
+  type VisionAnalysis,
 } from '../features/ai-assist/agents/orchestrator';
 
 interface AgentState<T> {
@@ -33,6 +34,8 @@ export function useAgents() {
   const [architectState, setArchitectState] = useState<AgentState<ArchitectReport>>({ data: null, isRunning: false, error: null });
   const [deepenerState, setDeepenerState] = useState<AgentState<DeepenerResult>>({ data: null, isRunning: false, error: null });
   const [analystState, setAnalystState] = useState<AgentState<ProposalAnalysis>>({ data: null, isRunning: false, error: null });
+
+  const [visionState, setVisionState] = useState<AgentState<VisionAnalysis>>({ data: null, isRunning: false, error: null });
 
   const [creationPipelineRunning, setCreationPipelineRunning] = useState(false);
   const [reviewPipelineRunning, setReviewPipelineRunning] = useState(false);
@@ -148,12 +151,28 @@ export function useAgents() {
     }
   }, [orchestrator]);
 
+  const analyzeCharacterImage = useCallback(async (
+    imageBase64: string,
+    imageMimeType: string
+  ) => {
+    setVisionState({ data: null, isRunning: true, error: null });
+    try {
+      const result = await orchestrator.analyzeCharacterImage({ imageBase64, imageMimeType });
+      setVisionState({ data: result, isRunning: false, error: null });
+      return result;
+    } catch (e: any) {
+      setVisionState({ data: null, isRunning: false, error: e.message });
+      return null;
+    }
+  }, [orchestrator]);
+
   return {
     // Individual agents
     checkCanon,
     checkBibleSection,
     deepenCharacter,
     analyzeProposal,
+    analyzeCharacterImage,
 
     // Pipelines
     runCreationPipeline,
@@ -164,6 +183,7 @@ export function useAgents() {
     worldArchitect: architectState,
     characterDeepener: deepenerState,
     proposalAnalyst: analystState,
+    visionAnalyzer: visionState,
 
     // Pipeline running
     isCreationPipelineRunning: creationPipelineRunning,

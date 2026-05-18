@@ -1,25 +1,156 @@
 # OpenSaga Architecture
 
-Welcome to the architectural overview of OpenSaga. This document is designed to help open-source contributors understand the technical foundation of the platform, the state management philosophy, and the provider-agnostic AI layer.
+This document explains how the current OpenSaga alpha is organized. It is written for contributors who need to understand the application boundaries before changing features.
 
-## Feature-Sliced Design (FSD)
+## System Shape
 
-OpenSaga relies on a modular, feature-based directory structure to ensure the codebase remains maintainable as the community and the platform grow.
+OpenSaga is a Vite React application backed by Supabase and optional client-side BYOK AI providers.
 
-`src/`
-- `app/`: Application initialization, global routing configurations, and top-level providers.
-- `core/`: Application-wide types, utilities, constants, and theme configurations.
-- `components/`: Generic, reusable UI components (Buttons, Cards, Inputs).
-- `features/`: The core of the application. Each domain (e.g., `worlds`, `proposals`, `auth`, `ai-assist`) gets its own folder encapsulating its components, hooks, and specific logic.
-- `services/`: The API abstraction layer. Currently uses simulated network latency for mock data, preparing for seamless integration with a true backend API.
-- `store/`: Global state management via Zustand.
+```text
+React app
+  -> AuthProvider / Supabase client
+  -> React Query hooks and service APIs
+  -> Supabase Postgres, RLS, Auth, Edge Functions
 
-## State Management
+Creator Studio
+  -> Zustand AI settings
+  -> AIEngine provider adapter
+  -> lightweight agent workflows
+  -> Optional OpenAI, Anthropic, OpenRouter, or Ollama calls
+```
 
-We use a dual-layer approach to state:
-1. **Server State (React Query):** For fetching, caching, and updating asynchronous data from our `services` layer. This simulates the latency and lifecycle of a real backend, ensuring components handle loading and error states properly.
-2. **Client State (Zustand):** For transient, UI-specific state (e.g., active modals, dark mode toggles) and holding Bring-Your-Own-Key (BYOK) AI configuration.
+The app also supports an offline/demo mode. When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are missing, OpenSaga logs a warning, uses mock/demo data where possible, and keeps the UI explorable without a backend project.
 
-## The Agnostic AI Engine (BYOK)
+## Directory Boundaries
 
-OpenSaga is committed to remaining provider-agnostic. We **do not** hardcode integrations with specific vendors (like OpenAI or Anthropic). Instead, the `features/ai-assist` module defines a strict `AIEngine` interface. Contributors can build adapters (e.g., `OpenAIAdapter.ts`, `OllamaAdapter.ts`) that conform to this interface. The application relies on a BYOK (Bring Your Own Key) model where users input their preferred API key in a settings modal, which is stored locally and used exclusively in their browser to generate content.
+```text
+src/app
+  App shell, router, sidebar, mobile navigation, top-level layout.
+
+src/components
+  Shared UI primitives and cards. These should stay domain-light.
+
+src/core
+  Domain types, constants, seed data, and static libraries.
+
+src/features
+  User-facing product areas. Feature folders own their screens, local components,
+  and feature-specific logic.
+
+src/hooks
+  Cross-feature hooks for agents, streams, logs, memberships, and voting.
+
+src/lib
+  Supabase client, auth provider, protected-route behavior, generated database
+  types, and low-level integration glue.
+
+src/services
+  API abstraction layer. Components should call services or hooks instead of
+  reaching into Supabase directly.
+
+src/store
+  Zustand stores for persisted UI and AI configuration.
+
+supabase
+  Database migrations and Edge Functions.
+```
+
+## Data Layer
+
+The production data model is defined in `supabase/migrations`.
+
+Core tables:
+
+- `profiles`: public user profile, role, reputation
+- `worlds`: top-level fictional universes and governance settings
+- `bible_sections`: structured World Bible sections
+- `entities`: characters, lore, factions, drafts, proposals, canon, rejected entries
+- `votes`: one vote per user per entity
+- `memberships`: world membership and role mapping
+- `activity`: append-only product activity feed
+
+The client service layer in `src/services` handles:
+
+- world CRUD and creator membership
+- character/entity CRUD and proposal submission
+- vote casting, removal, tallying, and active proposal lookup
+- governance decisions and proposal state transitions
+- profile and membership reads/updates
+- activity feed creation and listing
+
+## Auth Model
+
+`src/lib/auth.tsx` owns session state. It listens to Supabase auth changes, loads or creates the user profile, and exposes login/logout/profile helpers through `useAuth`.
+
+Protected routes currently cover:
+
+- `/create`
+- `/studio`
+- `/profile`
+
+When Supabase is not configured, protected routes allow demo access so contributors can inspect the product without provisioning infrastructure.
+
+## Proposal -> Vote -> Canon
+
+The core OpenSaga loop is represented in both client services and Supabase infrastructure:
+
+1. A creator drafts an entity.
+2. The entity is submitted as `PROPOSAL` with a voting deadline.
+3. Members cast `UP` or `DOWN` votes.
+4. Governance logic calculates approval percentage against the world's threshold.
+5. Passing proposals become `CANON`; failed proposals become `REJECTED`.
+6. Activity entries are written, and reputation can be awarded to the author.
+
+`src/services/api.governance.ts` contains client-callable governance helpers. `supabase/functions/tally-proposals/index.ts` is the server-side Edge Function scaffold for scheduled automated tallying.
+
+Before public beta, the server-side tally function and RLS policies should be reviewed against real project credentials so proposal state changes cannot be spoofed from the browser.
+
+## Creator Studio and AI
+
+The Creator Studio lives in `src/features/ai-assist`.
+
+Implemented pieces:
+
+- `CreatorStudioView.tsx`: workspace UI, tool modes, draft persistence, submit/export paths
+- `AIEngine.ts`: provider-agnostic generation interface and direct fetch adapters
+- `SettingsModal.tsx`: BYOK provider, key, model, endpoint, and temperature settings
+- `store/aiStore.ts`: persisted AI configuration
+- `agents/`: agent workflows, tools, schemas, logger, streaming, rate limiter
+
+Supported providers:
+
+- `mock`: local deterministic responses
+- `openai`: OpenAI chat completions
+- `anthropic`: Anthropic messages API
+- `openrouter`: OpenAI-compatible OpenRouter endpoint
+- `ollama`: local Ollama endpoint
+
+API keys are stored in browser local storage. They are not sent to OpenSaga servers, but local storage is still exposed to XSS. Treat CSP, dependency hygiene, and input sanitization as launch blockers.
+
+## Testing and CI
+
+Local quality gates:
+
+```bash
+npm run typecheck
+npm run test
+npm run test:e2e
+npm run build
+npm run check
+```
+
+CI runs typecheck, unit tests, build, Playwright browser install, and E2E tests on pushes and pull requests to `main`.
+
+Current test coverage is strongest around the agent layer, with smoke E2E coverage for navigation, discovery, creation, and Creator Studio settings. Before public beta, the highest-value next tests are:
+
+- service-layer tests for governance and votes
+- auth/protected-route integration tests
+- expanded Playwright E2E tests for create world -> submit proposal -> vote -> canon
+- accessibility checks for modals, navigation, forms, and mobile flows
+
+## Known Technical Debt
+
+- Formal bundle budgets and analysis are not documented yet, even though current production chunks are below Vite's warning threshold.
+- The Supabase Edge Function is scaffolded but not yet wired to a deployed scheduler.
+- Demo mode is useful for contributors, but production deployments need explicit environment validation.
+- RLS and governance enforcement need a real-project security pass before public beta.

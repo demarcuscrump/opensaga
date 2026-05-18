@@ -11,7 +11,7 @@ import { worldsApi } from '../../services/api.worlds';
 import { charactersApi } from '../../services/api.characters';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { World, Character } from '../../core/types';
-import { useAgents } from '../../hooks/useAgents';
+import { useAIStore } from '../../store/aiStore';
 import type { ProposalAnalysis } from '../../features/ai-assist/agents/schemas';
 
 function getTimeLeft(endDate: Date): string {
@@ -45,7 +45,7 @@ export const WorldHubView = () => {
   const [votingEntity, setVotingEntity] = useState<string | null>(null);
   const [proposalAnalyses, setProposalAnalyses] = useState<Record<string, ProposalAnalysis>>({});
   const [analyzingProposal, setAnalyzingProposal] = useState<string | null>(null);
-  const agents = useAgents();
+  const aiConfig = useAIStore(s => s.getConfig)();
 
   // Fetch world + characters
   useEffect(() => {
@@ -95,6 +95,20 @@ export const WorldHubView = () => {
     const updated = await votesApi.getTally(entityId, user.id);
     setTallies(prev => ({ ...prev, [entityId]: updated }));
     setVotingEntity(null);
+  };
+
+  const handleAnalyzeProposal = async (proposal: any) => {
+    if (!world) return;
+    setAnalyzingProposal(proposal.id);
+    try {
+      const { AgentOrchestrator } = await import('../../features/ai-assist/agents/orchestrator');
+      const orchestrator = new AgentOrchestrator(aiConfig);
+      const content = `Type: ${proposal.type}\nName: ${proposal.data?.name || 'Untitled'}\nDescription: ${proposal.data?.description || ''}\nJustification: ${proposal.justification || ''}`;
+      const result = await orchestrator.analyzeProposal({ proposalContent: content, worldId: world.id });
+      setProposalAnalyses(prev => ({ ...prev, [proposal.id]: result }));
+    } finally {
+      setAnalyzingProposal(null);
+    }
   };
 
   const tabs = [
@@ -412,15 +426,7 @@ export const WorldHubView = () => {
                                 </div>
                               ) : (
                                 <button
-                                  onClick={async () => {
-                                    setAnalyzingProposal(proposal.id);
-                                    const content = `Type: ${proposal.type}\nName: ${proposal.data?.name || 'Untitled'}\nDescription: ${proposal.data?.description || ''}\nJustification: ${proposal.justification || ''}`;
-                                    const result = await agents.analyzeProposal(content, world.id);
-                                    if (result) {
-                                      setProposalAnalyses(prev => ({ ...prev, [proposal.id]: result }));
-                                    }
-                                    setAnalyzingProposal(null);
-                                  }}
+                                  onClick={() => handleAnalyzeProposal(proposal)}
                                   disabled={analyzingProposal === proposal.id}
                                   className="mt-3 flex items-center gap-1.5 text-xs text-accent-primary hover:underline disabled:opacity-50"
                                 >

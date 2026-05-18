@@ -1,18 +1,24 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Home, Compass, PlusCircle, Activity, User, Moon, Sun, Wand2, LogIn, LogOut } from 'lucide-react';
-import { APP_NAME } from '../core/constants';
-import { DiscoveryView } from '../features/worlds/DiscoveryView';
-import { LandingView } from '../features/worlds/LandingView';
-import { WorldHubView } from '../features/worlds/WorldHubView';
-import { ActivityFeed } from '../features/worlds/ActivityFeed';
-import { UserProfileView } from '../features/users/UserProfileView';
-import { CreateView } from '../features/proposals/CreateView';
-import { CreatorStudioView } from '../features/ai-assist/CreatorStudioView';
-import { LoginView } from '../features/auth/LoginView';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { useAuth } from '../lib/auth';
 import { useUIStore } from '../store/uiStore';
+
+const LandingView = lazy(() => import('../features/worlds/LandingView').then(module => ({ default: module.LandingView })));
+const LoginView = lazy(() => import('../features/auth/LoginView').then(module => ({ default: module.LoginView })));
+const DiscoveryView = lazy(() => import('../features/worlds/DiscoveryView').then(module => ({ default: module.DiscoveryView })));
+const WorldHubView = lazy(() => import('../features/worlds/WorldHubView').then(module => ({ default: module.WorldHubView })));
+const ActivityFeed = lazy(() => import('../features/worlds/ActivityFeed').then(module => ({ default: module.ActivityFeed })));
+const UserProfileView = lazy(() => import('../features/users/UserProfileView').then(module => ({ default: module.UserProfileView })));
+const CreateView = lazy(() => import('../features/proposals/CreateView').then(module => ({ default: module.CreateView })));
+const CreatorStudioView = lazy(() => import('../features/ai-assist/CreatorStudioView').then(module => ({ default: module.CreatorStudioView })));
+
+const RouteFallback: React.FC = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="h-8 w-8 rounded-full border border-border border-t-accent-primary animate-spin" />
+  </div>
+);
 
 const DesktopSidebar: React.FC = () => {
   const location = useLocation();
@@ -169,16 +175,18 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <Layout>
-        <Routes>
-          <Route path="/" element={<LandingView />} />
-          <Route path="/login" element={<LoginView />} />
-          <Route path="/explore" element={<DiscoveryView />} />
-          <Route path="/world/:id" element={<WorldHubView />} />
-          <Route path="/create" element={<ProtectedRoute><CreateView /></ProtectedRoute>} />
-          <Route path="/studio" element={<ProtectedRoute><CreatorStudioView /></ProtectedRoute>} />
-          <Route path="/activity" element={<div className="p-8"><ActivityFeed /></div>} />
-          <Route path="/profile" element={<ProtectedRoute><UserProfileView /></ProtectedRoute>} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<LandingView />} />
+            <Route path="/login" element={<LoginView />} />
+            <Route path="/explore" element={<DiscoveryView />} />
+            <Route path="/world/:id" element={<WorldHubView />} />
+            <Route path="/create" element={<ProtectedRoute><CreateView /></ProtectedRoute>} />
+            <Route path="/studio" element={<ProtectedRoute><CreatorStudioView /></ProtectedRoute>} />
+            <Route path="/activity" element={<div className="p-8"><ActivityFeed /></div>} />
+            <Route path="/profile" element={<ProtectedRoute><UserProfileView /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
       </Layout>
     </HashRouter>
   );

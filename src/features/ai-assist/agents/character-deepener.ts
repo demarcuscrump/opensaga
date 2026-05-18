@@ -1,40 +1,25 @@
 /**
- * Character Deepener Agent — LangGraph StateGraph
+ * Character Deepener Agent
  *
- * Graph: START → gatherContext → deepen → validateOutput → canonCheck → END
- *                                   ↑           ↓
- *                                   └── retry (max 1)
- *
- * Auto-fetches World Bible + existing characters, then enriches a
- * character concept. Optionally chains to Canon Keeper for validation.
+ * Workflow: gatherContext -> deepen -> validateOutput, with one parse retry.
+ * Auto-fetches World Bible + existing characters, then enriches a character concept.
  */
 
-import {
-  StateGraph,
-  START,
-  END,
-  Annotation,
-} from '@langchain/langgraph';
-import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import type { AgentChatModel } from './model-factory';
 import { fetchWorldBible, fetchCharacters } from './tools';
 import { DeepenerResultSchema, type DeepenerResult } from './schemas';
 
-// ─── State ──────────────────────────────────────────────────────────
-
-const CharacterDeepenerState = Annotation.Root({
-  worldId: Annotation<string>,
-  characterConcept: Annotation<string>,
-  manualBible: Annotation<string | undefined>,
-  worldBible: Annotation<string>,
-  existingCharacters: Annotation<string>,
-  rawOutput: Annotation<string>,
-  result: Annotation<DeepenerResult | null>,
-  retryCount: Annotation<number>,
-  error: Annotation<string | null>,
-});
-
-type DeepState = typeof CharacterDeepenerState.State;
+type DeepState = {
+  worldId: string;
+  characterConcept: string;
+  manualBible?: string;
+  worldBible: string;
+  existingCharacters: string;
+  rawOutput: string;
+  result: DeepenerResult | null;
+  retryCount: number;
+  error: string | null;
+};
 
 const DEEPENER_PROMPT = `You are the Character Deepener — OpenSaga's specialist in creating rich, world-consistent characters.
 
@@ -57,9 +42,7 @@ Rules:
 - Include at least one surprise or subversion of the archetype
 - Reference other existing characters in the world when building relationships`;
 
-// ─── Graph Builder ──────────────────────────────────────────────────
-
-export function buildCharacterDeepenerGraph(model: BaseChatModel) {
+export function buildCharacterDeepenerGraph(model: AgentChatModel) {
   async function gatherContext(state: DeepState): Promise<Partial<DeepState>> {
     let bible = state.manualBible || '';
     let chars = '';
@@ -69,7 +52,7 @@ export function buildCharacterDeepenerGraph(model: BaseChatModel) {
         bible = bible || await fetchWorldBible.invoke({ worldId: state.worldId });
         chars = await fetchCharacters.invoke({ worldId: state.worldId });
       } catch {
-        // Proceed with what we have
+        // Keep the agent usable in demo/offline mode.
       }
     }
 
@@ -82,19 +65,21 @@ export function buildCharacterDeepenerGraph(model: BaseChatModel) {
   async function deepen(state: DeepState): Promise<Partial<DeepState>> {
     try {
       const response = await model.invoke([
-        new SystemMessage(DEEPENER_PROMPT),
-        new HumanMessage(
-          `--- WORLD BIBLE ---\n${state.worldBible}\n\n` +
-          `--- EXISTING CHARACTERS IN THIS WORLD ---\n${state.existingCharacters}\n\n` +
-          `--- CHARACTER CONCEPT (Deepen this) ---\n${state.characterConcept}`
-        ),
+        { role: 'system', content: DEEPENER_PROMPT },
+        {
+          role: 'user',
+          content:
+            `--- WORLD BIBLE ---\n${state.worldBible}\n\n` +
+            `--- EXISTING CHARACTERS IN THIS WORLD ---\n${state.existingCharacters}\n\n` +
+            `--- CHARACTER CONCEPT (Deepen this) ---\n${state.characterConcept}`,
+        },
       ]);
 
       const content = typeof response.content === 'string'
         ? response.content
         : JSON.stringify(response.content);
 
-      return { rawOutput: content };
+      return { rawOutput: content, error: null };
     } catch (err: any) {
       return { error: `LLM call failed: ${err.message}`, rawOutput: '' };
     }
@@ -118,13 +103,9 @@ export function buildCharacterDeepenerGraph(model: BaseChatModel) {
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/) || jsonStr.match(/(\{[\s\S]*\})/);
       if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-      const parsed = JSON.parse(jsonStr);
-      const validated = DeepenerResultSchema.parse(parsed);
-      return { result: validated };
+      return { result: DeepenerResultSchema.parse(JSON.parse(jsonStr)) };
     } catch {
-      if (state.retryCount < 1) {
-        return { retryCount: state.retryCount + 1 };
-      }
+      if (state.retryCount < 1) return { retryCount: state.retryCount + 1 };
       return {
         result: {
           backstory: state.rawOutput?.slice(0, 500) || 'Could not parse response.',
@@ -137,19 +118,28 @@ export function buildCharacterDeepenerGraph(model: BaseChatModel) {
     }
   }
 
-  function shouldRetry(state: DeepState): string {
-    if (state.result) return END;
-    if (state.retryCount > 0 && !state.result) return 'deepen';
-    return END;
-  }
+  return {
+    async invoke(input: Partial<DeepState> & Pick<DeepState, 'worldId' | 'characterConcept'>): Promise<DeepState> {
+      let state: DeepState = {
+        manualBible: undefined,
+        worldBible: '',
+        existingCharacters: '',
+        rawOutput: '',
+        result: null,
+        retryCount: 0,
+        error: null,
+        ...input,
+      };
 
-  return new StateGraph(CharacterDeepenerState)
-    .addNode('gatherContext', gatherContext)
-    .addNode('deepen', deepen)
-    .addNode('validateOutput', validateOutput)
-    .addEdge(START, 'gatherContext')
-    .addEdge('gatherContext', 'deepen')
-    .addEdge('deepen', 'validateOutput')
-    .addConditionalEdges('validateOutput', shouldRetry)
-    .compile();
+      state = { ...state, ...(await gatherContext(state)) };
+
+      while (!state.result) {
+        state = { ...state, ...(await deepen(state)) };
+        state = { ...state, ...(await validateOutput(state)) };
+        if (state.result || state.retryCount > 1) break;
+      }
+
+      return state;
+    },
+  };
 }

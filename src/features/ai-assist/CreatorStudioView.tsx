@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, Save, PenTool, Settings2, CheckCircle2, Copy,
   User, FileText, GitMerge, Lightbulb, Globe2, Wand2,
-  ChevronRight, Send, X, Eye, EyeOff, Loader2, Scroll
+  ChevronRight, Send, X, Eye, EyeOff, Loader2, Scroll,
+  Upload, ImageIcon, Trash2
 } from 'lucide-react';
 import { Button } from '../../components';
 import { useAIStore, useAIEngine } from '../../store/aiStore';
@@ -11,6 +12,11 @@ import { worldsApi } from '../../services/api.worlds';
 import type { World } from '../../core/types';
 import { useAgents } from '../../hooks/useAgents';
 import type { CanonReport, DeepenerResult } from './agents/schemas';
+import type { VisionAnalysis } from './agents/orchestrator';
+import { AgentDebugPanel } from './AgentDebugPanel';
+import { AgentErrorBoundary } from './AgentErrorBoundary';
+import { CharacterExport } from './CharacterExport';
+import { RateLimiter } from './agents/rate-limiter';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -119,6 +125,11 @@ export const CreatorStudioView = () => {
   const agents = useAgents();
   const [brainstormIdeas, setBrainstormIdeas] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [charImagePreview, setCharImagePreview] = useState<string | null>(null);
+  const [charImageBase64, setCharImageBase64] = useState<string | null>(null);
+  const [charImageMime, setCharImageMime] = useState<string>('image/png');
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [visionResult, setVisionResult] = useState<VisionAnalysis | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [selectedWorld, setSelectedWorld] = useState('');
@@ -150,8 +161,107 @@ export const CreatorStudioView = () => {
     return () => clearInterval(interval);
   }, [character, worldSections]);
 
+  // Keyboard shortcuts (per CREATOR_STUDIO_PRD.md §Keyboard Shortcuts)
+  useEffect(() => {
+    const toolKeys: Record<string, StudioTool> = { '1': 'character', '2': 'lore', '3': 'brainstorm', '4': 'canoncheck', '5': 'worldseed' };
+    const handler = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      // Cmd+S — Save draft
+      if (isMod && e.key === 's') {
+        e.preventDefault();
+        saveDraftToStorage('character', character);
+        saveDraftToStorage('worldseed', worldSections);
+        setLastSaved(new Date().toLocaleTimeString());
+      }
+      // Cmd+Enter — Generate (trigger active AI action)
+      if (isMod && e.key === 'Enter' && !isGenerating) {
+        e.preventDefault();
+        if (activeTool === 'character') handleDeepenCharacter();
+        else if (activeTool === 'canoncheck') handleCanonCheck();
+        else if (activeTool === 'brainstorm') handleBrainstorm();
+        else if (activeTool === 'lore') handleLoreGenerate();
+      }
+      // Cmd+Shift+P — Submit as Proposal (placeholder — shows toast)
+      if (isMod && e.shiftKey && e.key === 'p') {
+        e.preventDefault();
+        setOutput('Submit as Proposal flow coming soon. Your draft has been saved.');
+        saveDraftToStorage('character', character);
+      }
+      // Cmd+1-5 — Switch tool
+      if (isMod && toolKeys[e.key]) {
+        e.preventDefault();
+        setActiveTool(toolKeys[e.key]);
+      }
+      // Escape — Close settings / exit focus
+      if (e.key === 'Escape') {
+        if (showSettings) setShowSettings(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [character, worldSections, showSettings, activeTool, isGenerating]);
+
   const updateChar = (field: keyof CharacterDraft, value: string) => {
     setCharacter(prev => ({ ...prev, [field]: value }));
+  };
+
+  // ─── Image Upload + Vision Analysis ─────────────────────────────
+
+  const handleImageUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    setCharImageMime(file.type);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setCharImagePreview(dataUrl);
+      // Extract base64 from data URL
+      const base64 = dataUrl.split(',')[1];
+      setCharImageBase64(base64);
+      setVisionResult(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
+  };
+
+  const handleVisionAnalyze = async () => {
+    if (!charImageBase64) return;
+    setIsAnalyzingImage(true);
+    setVisionResult(null);
+    try {
+      const result = await agents.analyzeCharacterImage(charImageBase64, charImageMime);
+      if (result) {
+        setVisionResult(result);
+        // Auto-populate character fields (only fill empty fields, don't overwrite user input)
+        setCharacter(prev => ({
+          ...prev,
+          name: prev.name || result.suggestedName || '',
+          archetype: prev.archetype || result.archetype || '',
+          species: prev.species || result.species || '',
+          age: prev.age || result.age || '',
+          pronouns: prev.pronouns || result.pronouns || '',
+          appearance: prev.appearance || result.appearance || '',
+          distinguishingFeatures: prev.distinguishingFeatures || result.distinguishingFeatures || '',
+          attire: prev.attire || result.attire || '',
+          powers: prev.powers || result.powers || '',
+          quirks: prev.quirks || result.personality || '',
+        }));
+        setOutput(`VISION ANALYSIS — Character identified\n\nSuggested Name: ${result.suggestedName}\nArchetype: ${result.archetype}\nSpecies: ${result.species}\nWorld Hints: ${result.worldHints}\n\nAll empty fields have been auto-populated. Edit any field to customize.`);
+      }
+    } catch (err: any) {
+      setOutput(`The Oracle could not read this image. ${err.message || 'Try again in a moment.'}`);
+    }
+    setIsAnalyzingImage(false);
+  };
+
+  const clearCharImage = () => {
+    setCharImagePreview(null);
+    setCharImageBase64(null);
+    setVisionResult(null);
   };
 
   const updateSection = (index: number, content: string) => {
@@ -190,7 +300,7 @@ export const CreatorStudioView = () => {
       }
       setOutput(result);
     } catch (err: any) {
-      setOutput(`Error: ${err.message}`);
+      setOutput(`The Oracle is resting. ${err.message || 'Try again in a moment.'}`);
     }
     setIsGenerating(false);
   };
@@ -207,7 +317,7 @@ export const CreatorStudioView = () => {
       updateSection(sectionIndex, result);
       setOutput(result);
     } catch (err: any) {
-      setOutput(`Error: ${err.message}`);
+      setOutput(`The Oracle is resting. ${err.message || 'Try again in a moment.'}`);
     }
     setIsGenerating(false);
   };
@@ -219,7 +329,7 @@ export const CreatorStudioView = () => {
       const result = await aiEngine.generateLore(lorePrompt, 'CHARACTER');
       setOutput(result);
     } catch (err: any) {
-      setOutput(`Error: ${err.message}`);
+      setOutput(`The Oracle is resting. ${err.message || 'Try again in a moment.'}`);
     }
     setIsGenerating(false);
   };
@@ -232,7 +342,7 @@ export const CreatorStudioView = () => {
       setBrainstormIdeas(ideas);
       setOutput(ideas.join('\n\n'));
     } catch (err: any) {
-      setOutput(`Error: ${err.message}`);
+      setOutput(`The Oracle is resting. ${err.message || 'Try again in a moment.'}`);
     }
     setIsGenerating(false);
   };
@@ -250,7 +360,7 @@ export const CreatorStudioView = () => {
         setOutput('Canon check returned no result. Check your AI provider configuration.');
       }
     } catch (err: any) {
-      setOutput(`Error: ${err.message}`);
+      setOutput(`The Oracle is resting. ${err.message || 'Try again in a moment.'}`);
     }
     setIsGenerating(false);
   };
@@ -267,7 +377,7 @@ export const CreatorStudioView = () => {
         setOutput(`CHARACTER DEEPENED\n\nBackstory:\n${result.backstory}\n\nRelationships:\n${result.relationships.map(r => `• ${r}`).join('\n')}\n\nPlot Hooks:\n${result.hooks.map(h => `• ${h}`).join('\n')}\n\nQuirks:\n${result.quirks.map(q => `• ${q}`).join('\n')}\n\nWorld Connections:\n${result.worldConnections}`);
       }
     } catch (err: any) {
-      setOutput(`Error: ${err.message}`);
+      setOutput(`The Oracle is resting. ${err.message || 'Try again in a moment.'}`);
     }
     setIsGenerating(false);
   };
@@ -285,10 +395,10 @@ export const CreatorStudioView = () => {
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-base animate-fade-in pt-16 md:pt-0">
+    <div className="flex h-screen overflow-hidden bg-surface-base animate-fade-in pt-16 md:pt-0" role="application" aria-label="Creator Studio">
 
       {/* ── Left Tool Panel ─────────────────────────────────────── */}
-      <div className="w-64 border-r border-border bg-surface-elevated flex flex-col h-full shrink-0 hidden lg:flex">
+      <nav className="w-64 border-r border-border bg-surface-elevated flex flex-col h-full shrink-0 hidden lg:flex" aria-label="Studio tools">
         <div className="p-5 border-b border-border">
           <h2 className="font-serif text-lg text-text-primary flex items-center gap-2">
             <PenTool size={16} className="text-accent-primary" />
@@ -320,11 +430,13 @@ export const CreatorStudioView = () => {
 
         {/* World Selector */}
         <div className="p-3 border-t border-border">
-          <label className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5 px-1">Target World</label>
+          <label htmlFor="world-selector" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5 px-1">Target World</label>
           <select
+            id="world-selector"
             value={selectedWorld}
             onChange={e => setSelectedWorld(e.target.value)}
-            className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:border-border-accent focus:outline-none"
+            className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+            aria-label="Select target world for AI context"
           >
             <option value="">No world selected</option>
             {studioWorlds.map(w => (
@@ -335,7 +447,7 @@ export const CreatorStudioView = () => {
 
         {/* AI Status */}
         <div className="p-3 border-t border-border">
-          <button onClick={() => setShowSettings(!showSettings)} className="flex items-center justify-between w-full px-2 py-1">
+          <button onClick={() => setShowSettings(!showSettings)} className="flex items-center justify-between w-full px-2 py-1" aria-label="Open AI provider settings" aria-expanded={showSettings}>
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <div className={`w-2 h-2 rounded-full ${aiEngine.isConfigured() ? 'bg-green-400 animate-pulse' : 'bg-amber-400'}`} />
               {aiStore.provider === 'mock' ? 'Mock Mode' : `${aiStore.provider} · ${aiStore.model || 'default'}`}
@@ -343,7 +455,7 @@ export const CreatorStudioView = () => {
             <Settings2 size={13} className="text-text-tertiary" />
           </button>
         </div>
-      </div>
+      </nav>
 
       {/* ── Main Content Area ───────────────────────────────────── */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -364,6 +476,7 @@ export const CreatorStudioView = () => {
         </div>
 
         {/* Canvas + Inspector split */}
+        <AgentErrorBoundary>
         <div className="flex-1 flex overflow-hidden">
 
           {/* ── Canvas (center) ───────────────────────────────── */}
@@ -372,6 +485,90 @@ export const CreatorStudioView = () => {
             {/* ──── CHARACTER FORGE ────────────────────────────── */}
             {activeTool === 'character' && (
               <>
+                {/* Image Upload Zone */}
+                <div className="px-6 pt-4 pb-2">
+                  {charImagePreview ? (
+                    <div className="flex items-start gap-4">
+                      <div className="relative group">
+                        <img
+                          src={charImagePreview}
+                          alt="Character"
+                          className="w-24 h-28 rounded-xl object-cover border border-border shadow-md"
+                        />
+                        <button
+                          onClick={clearCharImage}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X size={10} />
+                        </button>
+                        {visionResult && (
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                            <CheckCircle2 size={10} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <button
+                          onClick={handleVisionAnalyze}
+                          disabled={isAnalyzingImage || !agents.isConfigured}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-medium hover:from-purple-500 hover:to-indigo-500 transition-all disabled:opacity-50 shadow-sm"
+                        >
+                          {isAnalyzingImage ? (
+                            <><Loader2 size={13} className="animate-spin" /> Analyzing image...</>
+                          ) : visionResult ? (
+                            <><Eye size={13} /> Re-analyze</>
+                          ) : (
+                            <><Sparkles size={13} /> Analyze with AI</>
+                          )}
+                        </button>
+                        {visionResult && (
+                          <p className="text-[10px] text-green-400 mt-1.5">
+                            Fields auto-populated from image. Edit any field to customize.
+                          </p>
+                        )}
+                        {!agents.isConfigured && (
+                          <p className="text-[10px] text-amber-400 mt-1.5">
+                            Configure an AI provider in settings to use vision analysis.
+                          </p>
+                        )}
+                        {agents.isConfigured && !visionResult && !isAnalyzingImage && (
+                          <p className="text-[10px] text-text-tertiary mt-1.5">
+                            Uses your configured model. Requires a vision-capable LLM.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onDrop={handleImageDrop}
+                      onDragOver={(e) => e.preventDefault()}
+                      className="border-2 border-dashed border-border hover:border-accent-primary/50 rounded-xl p-4 flex items-center gap-4 cursor-pointer transition-colors group"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => {
+                          const file = (e.target as HTMLInputElement).files?.[0];
+                          if (file) handleImageUpload(file);
+                        };
+                        input.click();
+                      }}
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-surface-elevated border border-border flex items-center justify-center group-hover:border-accent-primary/30 transition-colors">
+                        <Upload size={18} className="text-text-tertiary group-hover:text-accent-primary transition-colors" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-text-secondary group-hover:text-text-primary transition-colors">
+                          Drop character art here or click to upload
+                        </p>
+                        <p className="text-[10px] text-text-tertiary mt-0.5">
+                          AI will analyze the image and auto-fill character fields
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Tab bar */}
                 <div className="border-b border-border px-6 pt-4 flex gap-6">
                   {CHARACTER_TABS.map(tab => (
@@ -450,9 +647,12 @@ export const CreatorStudioView = () => {
                   )}
                 </div>
 
-                {/* Deepen Character Agent Button */}
-                <div className="px-6 py-3 border-t border-border flex items-center justify-between">
-                  <p className="text-[10px] text-text-tertiary">Use the <span className="text-accent-primary font-medium">Character Deepener</span> agent to generate backstory, relationships, and plot hooks.</p>
+                {/* Deepen Character Agent Button + Export/Import */}
+                <div className="px-6 py-3 border-t border-border flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <CharacterExport character={character} onImport={setCharacter} imagePreview={charImagePreview} />
+                    <p className="text-[10px] text-text-tertiary hidden sm:block truncate">Use <span className="text-accent-primary font-medium">Character Deepener</span> to enrich.</p>
+                  </div>
                   <button
                     onClick={handleDeepenCharacter}
                     disabled={!character.name || isGenerating}
@@ -559,7 +759,7 @@ export const CreatorStudioView = () => {
                     className="flex items-center gap-2 px-5 py-2.5 bg-accent-primary text-surface-base rounded-lg text-sm font-medium hover:bg-accent-hover transition-all disabled:opacity-50"
                   >
                     {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-                    {isGenerating ? 'Consulting the Oracle...' : 'Generate Lore'}
+                    {isGenerating ? 'Consulting the Oracle...' : 'Consult the Oracle'}
                   </button>
                 </div>
               </div>
@@ -582,7 +782,7 @@ export const CreatorStudioView = () => {
                     className="flex items-center gap-2 px-5 py-2.5 bg-accent-primary text-surface-base rounded-lg text-sm font-medium hover:bg-accent-hover transition-all disabled:opacity-50"
                   >
                     {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Lightbulb size={14} />}
-                    {isGenerating ? 'Brainstorming...' : 'Generate Ideas'}
+                    {isGenerating ? 'Consulting the Oracle...' : 'Consult the Oracle'}
                   </button>
                 </div>
                 {brainstormIdeas.length > 0 && (
@@ -755,12 +955,19 @@ export const CreatorStudioView = () => {
             </div>
 
             {/* Status bar */}
-            <div className="p-3 border-t border-border text-[11px] text-text-tertiary flex items-center justify-between">
-              <span>{lastSaved ? `Saved ${lastSaved}` : 'Not saved yet'}</span>
-              <span>{aiStore.provider === 'mock' ? 'Mock mode' : aiStore.provider}</span>
+            <div className="p-3 border-t border-border text-[11px] text-text-tertiary flex items-center justify-between gap-4">
+              <span>{lastSaved ? `Saved ${lastSaved}` : 'Not saved yet'} <span className="hidden sm:inline text-text-tertiary/50">· ⌘S to save</span></span>
+              <div className="flex items-center gap-3">
+                <span className="text-text-tertiary/60">{RateLimiter.getUsage().day}/{RateLimiter.getUsage().limits.maxPerDay} today</span>
+                <span>{aiStore.provider === 'mock' ? 'Mock mode' : aiStore.provider}</span>
+              </div>
             </div>
+
+            {/* Agent Observability Panel */}
+            <AgentDebugPanel />
           </div>
         </div>
+        </AgentErrorBoundary>
       </div>
 
       {/* ── AI Settings Modal ────────────────────────────────────── */}
@@ -776,15 +983,17 @@ function FieldGroup({ label, value, onChange, placeholder, className, multiline,
   className?: string; multiline?: boolean; rows?: number;
   onAI?: () => void; isGenerating?: boolean;
 }) {
+  const fieldId = `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>
+        <label htmlFor={fieldId} className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>
         {onAI && (
           <button
             onClick={onAI}
             disabled={isGenerating}
-            className="flex items-center gap-1 text-[10px] text-accent-primary hover:underline disabled:opacity-50"
+            className="flex items-center gap-1 text-[10px] text-accent-primary hover:underline disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent-primary/30 rounded"
+            aria-label={`Consult the Oracle for ${label}`}
           >
             {isGenerating ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
             AI
@@ -793,19 +1002,21 @@ function FieldGroup({ label, value, onChange, placeholder, className, multiline,
       </div>
       {multiline ? (
         <textarea
+          id={fieldId}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows || 3}
-          className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-tertiary resize-none focus:border-border-accent focus:outline-none leading-relaxed"
+          className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-tertiary resize-none focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30 leading-relaxed"
         />
       ) : (
         <input
+          id={fieldId}
           type="text"
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-border-accent focus:outline-none"
+          className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
         />
       )}
     </div>
@@ -875,19 +1086,20 @@ function AISettingsPanel({ onClose }: { onClose: () => void }) {
   const store = useAIStore();
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="AI Settings">
       <div className="bg-surface-elevated border border-border rounded-2xl w-full max-w-md p-6 space-y-5 animate-fade-in" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="font-serif text-lg text-text-primary">AI Settings</h3>
-          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary"><X size={18} /></button>
+          <button onClick={onClose} className="text-text-tertiary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/30 rounded" aria-label="Close settings"><X size={18} /></button>
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">Provider</label>
+          <label htmlFor="ai-provider-select" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">Provider</label>
           <select
+            id="ai-provider-select"
             value={store.provider}
             onChange={e => store.setProvider(e.target.value as AIProvider)}
-            className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none"
+            className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
           >
             <option value="mock">Mock (Offline Demo)</option>
             <option value="openai">OpenAI</option>
@@ -899,43 +1111,47 @@ function AISettingsPanel({ onClose }: { onClose: () => void }) {
 
         {store.provider !== 'mock' && store.provider !== 'ollama' && (
           <div>
-            <label className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">API Key</label>
+            <label htmlFor="ai-api-key" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">API Key</label>
             <input
+              id="ai-api-key"
               type="password"
               value={store.apiKey}
               onChange={e => store.setApiKey(e.target.value)}
               placeholder="sk-..."
-              className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none"
+              className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+              aria-describedby="api-key-hint"
             />
-            <p className="text-[11px] text-text-tertiary mt-1">Stored locally in your browser. Never sent to our servers.</p>
+            <p id="api-key-hint" className="text-[11px] text-text-tertiary mt-1">Stored locally in your browser. Never sent to our servers.</p>
           </div>
         )}
 
         <div>
-          <label className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">Model</label>
+          <label htmlFor="ai-model" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">Model</label>
           <input
+            id="ai-model"
             type="text"
             value={store.model}
             onChange={e => store.setModel(e.target.value)}
             placeholder="e.g., gpt-4o"
-            className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none"
+            className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
           />
         </div>
 
         {store.provider === 'ollama' && (
           <div>
-            <label className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">Endpoint</label>
+            <label htmlFor="ai-endpoint" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest block mb-1.5">Endpoint</label>
             <input
+              id="ai-endpoint"
               type="text"
               value={store.endpoint}
               onChange={e => store.setEndpoint(e.target.value)}
               placeholder="http://localhost:11434"
-              className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none"
+              className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
             />
           </div>
         )}
 
-        <button onClick={onClose} className="w-full bg-accent-primary text-surface-base py-2.5 rounded-lg text-sm font-medium hover:bg-accent-hover transition-all">
+        <button onClick={onClose} className="w-full bg-accent-primary text-surface-base py-2.5 rounded-lg text-sm font-medium hover:bg-accent-hover transition-all focus:outline-none focus:ring-2 focus:ring-accent-primary/50">
           Save Settings
         </button>
       </div>

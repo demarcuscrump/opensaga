@@ -4,37 +4,40 @@
  * Provides:
  * 1. Individual agent invocations
  * 2. Multi-agent pipelines (Creation Pipeline, Review Pipeline)
- * 3. Model factory integration (BYOK → LangChain ChatModel)
+ * 3. Model factory integration (BYOK → small chat model)
  *
  * This replaces the old AgentOrchestrator.ts that used raw prompts.
  */
 
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { AIProviderConfig } from '../AIEngine';
-import { createChatModel } from './model-factory';
+import { createChatModel, type AgentChatModel } from './model-factory';
 import { buildCanonKeeperGraph } from './canon-keeper';
 import { buildWorldArchitectGraph } from './world-architect';
 import { buildCharacterDeepenerGraph } from './character-deepener';
 import { buildProposalAnalystGraph } from './proposal-analyst';
+import { buildVisionAnalyzerGraph, type VisionAnalysis } from './vision-analyzer';
 import type { CanonReport } from './schemas';
 import type { ArchitectReport } from './schemas';
 import type { DeepenerResult } from './schemas';
 import type { ProposalAnalysis } from './schemas';
+import { AgentLogger } from './logger';
+import { RateLimiter } from './rate-limiter';
 
 // Re-export types for consumers
-export type { CanonReport, ArchitectReport, DeepenerResult, ProposalAnalysis };
+export type { CanonReport, ArchitectReport, DeepenerResult, ProposalAnalysis, VisionAnalysis };
 
 // ─── Orchestrator ───────────────────────────────────────────────────
 
 export class AgentOrchestrator {
-  private model: BaseChatModel | null;
+  private model: AgentChatModel | null = null;
+  private modelPromise: Promise<AgentChatModel | null> | null = null;
 
-  constructor(config: AIProviderConfig) {
-    this.model = createChatModel(config);
-  }
+  constructor(private config: AIProviderConfig) {}
 
   isConfigured(): boolean {
-    return this.model !== null;
+    if (!this.config || this.config.provider === 'mock') return false;
+    if (this.config.provider === 'ollama') return true;
+    return Boolean(this.config.apiKey);
   }
 
   // ── Individual Agents ───────────────────────────────────────────
@@ -44,20 +47,28 @@ export class AgentOrchestrator {
     proposalContent: string;
     manualBible?: string;
   }): Promise<CanonReport> {
-    this.assertModel();
-    const graph = buildCanonKeeperGraph(this.model!);
-    const result = await graph.invoke({
-      worldId: opts.worldId,
-      proposalContent: opts.proposalContent,
-      manualBible: opts.manualBible,
-      worldBible: '',
-      existingCanon: '',
-      rawOutput: '',
-      report: null,
-      retryCount: 0,
-      error: null,
-    });
-    return result.report!;
+    const model = await this.getModel();
+    this.assertRateLimit();
+    const runId = AgentLogger.startRun('canon_keeper', { worldId: opts.worldId, contentLength: opts.proposalContent.length });
+    try {
+      const graph = buildCanonKeeperGraph(model);
+      const result = await graph.invoke({
+        worldId: opts.worldId,
+        proposalContent: opts.proposalContent,
+        manualBible: opts.manualBible,
+        worldBible: '',
+        existingCanon: '',
+        rawOutput: '',
+        report: null,
+        retryCount: 0,
+        error: null,
+      });
+      AgentLogger.completeRun(runId, { score: result.report?.score, recommendation: result.report?.recommendation });
+      return result.report!;
+    } catch (err: any) {
+      AgentLogger.failRun(runId, err);
+      throw err;
+    }
   }
 
   async checkBibleSection(opts: {
@@ -66,20 +77,28 @@ export class AgentOrchestrator {
     sectionContent: string;
     otherSections?: Record<string, string>;
   }): Promise<ArchitectReport> {
-    this.assertModel();
-    const graph = buildWorldArchitectGraph(this.model!);
-    const result = await graph.invoke({
-      worldId: opts.worldId,
-      sectionName: opts.sectionName,
-      sectionContent: opts.sectionContent,
-      otherSections: opts.otherSections || {},
-      fullBible: '',
-      rawOutput: '',
-      report: null,
-      retryCount: 0,
-      error: null,
-    });
-    return result.report!;
+    const model = await this.getModel();
+    this.assertRateLimit();
+    const runId = AgentLogger.startRun('world_architect', { worldId: opts.worldId, section: opts.sectionName });
+    try {
+      const graph = buildWorldArchitectGraph(model);
+      const result = await graph.invoke({
+        worldId: opts.worldId,
+        sectionName: opts.sectionName,
+        sectionContent: opts.sectionContent,
+        otherSections: opts.otherSections || {},
+        fullBible: '',
+        rawOutput: '',
+        report: null,
+        retryCount: 0,
+        error: null,
+      });
+      AgentLogger.completeRun(runId, { coherenceScore: result.report?.coherenceScore });
+      return result.report!;
+    } catch (err: any) {
+      AgentLogger.failRun(runId, err);
+      throw err;
+    }
   }
 
   async deepenCharacter(opts: {
@@ -87,20 +106,28 @@ export class AgentOrchestrator {
     characterConcept: string;
     manualBible?: string;
   }): Promise<DeepenerResult> {
-    this.assertModel();
-    const graph = buildCharacterDeepenerGraph(this.model!);
-    const result = await graph.invoke({
-      worldId: opts.worldId,
-      characterConcept: opts.characterConcept,
-      manualBible: opts.manualBible,
-      worldBible: '',
-      existingCharacters: '',
-      rawOutput: '',
-      result: null,
-      retryCount: 0,
-      error: null,
-    });
-    return result.result!;
+    const model = await this.getModel();
+    this.assertRateLimit();
+    const runId = AgentLogger.startRun('character_deepener', { worldId: opts.worldId, conceptLength: opts.characterConcept.length });
+    try {
+      const graph = buildCharacterDeepenerGraph(model);
+      const result = await graph.invoke({
+        worldId: opts.worldId,
+        characterConcept: opts.characterConcept,
+        manualBible: opts.manualBible,
+        worldBible: '',
+        existingCharacters: '',
+        rawOutput: '',
+        result: null,
+        retryCount: 0,
+        error: null,
+      });
+      AgentLogger.completeRun(runId, { hasBackstory: !!result.result?.backstory, hookCount: result.result?.hooks?.length });
+      return result.result!;
+    } catch (err: any) {
+      AgentLogger.failRun(runId, err);
+      throw err;
+    }
   }
 
   async analyzeProposal(opts: {
@@ -108,20 +135,53 @@ export class AgentOrchestrator {
     proposalContent: string;
     canonPreCheck?: string;
   }): Promise<ProposalAnalysis> {
-    this.assertModel();
-    const graph = buildProposalAnalystGraph(this.model!);
-    const result = await graph.invoke({
-      worldId: opts.worldId,
-      proposalContent: opts.proposalContent,
-      canonPreCheck: opts.canonPreCheck,
-      worldBible: '',
-      existingCanon: '',
-      rawOutput: '',
-      analysis: null,
-      retryCount: 0,
-      error: null,
-    });
-    return result.analysis!;
+    const model = await this.getModel();
+    this.assertRateLimit();
+    const runId = AgentLogger.startRun('proposal_analyst', { worldId: opts.worldId, contentLength: opts.proposalContent.length });
+    try {
+      const graph = buildProposalAnalystGraph(model);
+      const result = await graph.invoke({
+        worldId: opts.worldId,
+        proposalContent: opts.proposalContent,
+        canonPreCheck: opts.canonPreCheck,
+        worldBible: '',
+        existingCanon: '',
+        rawOutput: '',
+        analysis: null,
+        retryCount: 0,
+        error: null,
+      });
+      AgentLogger.completeRun(runId, { qualityScore: result.analysis?.qualityScore, canonFitScore: result.analysis?.canonFitScore, recommendation: result.analysis?.recommendation });
+      return result.analysis!;
+    } catch (err: any) {
+      AgentLogger.failRun(runId, err);
+      throw err;
+    }
+  }
+
+  async analyzeCharacterImage(opts: {
+    imageBase64: string;
+    imageMimeType: string;
+  }): Promise<VisionAnalysis> {
+    const model = await this.getModel();
+    this.assertRateLimit();
+    const runId = AgentLogger.startRun('vision_analyzer', { mimeType: opts.imageMimeType, imageSize: opts.imageBase64.length });
+    try {
+      const graph = buildVisionAnalyzerGraph(model);
+      const result = await graph.invoke({
+        imageBase64: opts.imageBase64,
+        imageMimeType: opts.imageMimeType,
+        rawOutput: '',
+        analysis: null,
+        retryCount: 0,
+        error: null,
+      });
+      AgentLogger.completeRun(runId, { suggestedName: result.analysis?.suggestedName, archetype: result.analysis?.archetype });
+      return result.analysis!;
+    } catch (err: any) {
+      AgentLogger.failRun(runId, err);
+      throw err;
+    }
   }
 
   // ── Multi-Agent Pipelines ───────────────────────────────────────
@@ -199,10 +259,26 @@ export class AgentOrchestrator {
 
   // ── Internal ────────────────────────────────────────────────────
 
-  private assertModel(): void {
+  private async getModel(): Promise<AgentChatModel> {
+    if (!this.modelPromise) {
+      this.modelPromise = createChatModel(this.config);
+    }
+
+    this.model = await this.modelPromise;
+
     if (!this.model) {
       throw new Error('AI provider not configured. Go to Creator Studio settings and add your API key.');
     }
+
+    return this.model;
+  }
+
+  private assertRateLimit(): void {
+    const { allowed, reason } = RateLimiter.check();
+    if (!allowed) {
+      throw new Error(reason || 'Rate limit exceeded.');
+    }
+    RateLimiter.record();
   }
 }
 

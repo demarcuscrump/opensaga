@@ -1,40 +1,25 @@
 /**
- * World Architect Agent — LangGraph StateGraph
+ * World Architect Agent
  *
- * Graph: START → gatherSections → analyze → validateOutput → END
- *                                     ↑                ↓
- *                                     └── retry (max 1)
- *
- * Checks a bible section against all other sections for consistency.
- * Auto-fetches all bible sections via tools when worldId is provided.
+ * Workflow: gatherSections -> analyze -> validateOutput, with one parse retry.
+ * Checks a Bible section against all other sections for consistency.
  */
 
-import {
-  StateGraph,
-  START,
-  END,
-  Annotation,
-} from '@langchain/langgraph';
-import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import type { AgentChatModel } from './model-factory';
 import { fetchWorldBible } from './tools';
 import { ArchitectReportSchema, type ArchitectReport } from './schemas';
 
-// ─── State ──────────────────────────────────────────────────────────
-
-const WorldArchitectState = Annotation.Root({
-  worldId: Annotation<string>,
-  sectionName: Annotation<string>,
-  sectionContent: Annotation<string>,
-  otherSections: Annotation<Record<string, string>>,
-  fullBible: Annotation<string>,
-  rawOutput: Annotation<string>,
-  report: Annotation<ArchitectReport | null>,
-  retryCount: Annotation<number>,
-  error: Annotation<string | null>,
-});
-
-type ArchState = typeof WorldArchitectState.State;
+type ArchState = {
+  worldId: string;
+  sectionName: string;
+  sectionContent: string;
+  otherSections: Record<string, string>;
+  fullBible: string;
+  rawOutput: string;
+  report: ArchitectReport | null;
+  retryCount: number;
+  error: string | null;
+};
 
 const ARCHITECT_PROMPT = `You are the World Architect — OpenSaga's master of universe design.
 
@@ -56,11 +41,8 @@ Rules:
 - Check factions against the power structures described elsewhere
 - Suggest connections between sections that strengthen the world`;
 
-// ─── Graph Builder ──────────────────────────────────────────────────
-
-export function buildWorldArchitectGraph(model: BaseChatModel) {
+export function buildWorldArchitectGraph(model: AgentChatModel) {
   async function gatherSections(state: ArchState): Promise<Partial<ArchState>> {
-    // If otherSections were provided directly, use them
     if (state.otherSections && Object.keys(state.otherSections).length > 0) {
       const otherContext = Object.entries(state.otherSections)
         .filter(([name]) => name !== state.sectionName)
@@ -69,11 +51,9 @@ export function buildWorldArchitectGraph(model: BaseChatModel) {
       return { fullBible: otherContext };
     }
 
-    // Otherwise auto-fetch from Supabase
     if (state.worldId && state.worldId !== 'manual') {
       try {
-        const bible = await fetchWorldBible.invoke({ worldId: state.worldId });
-        return { fullBible: bible };
+        return { fullBible: await fetchWorldBible.invoke({ worldId: state.worldId }) };
       } catch {
         return { fullBible: '[Could not fetch bible sections.]' };
       }
@@ -85,19 +65,21 @@ export function buildWorldArchitectGraph(model: BaseChatModel) {
   async function analyze(state: ArchState): Promise<Partial<ArchState>> {
     try {
       const response = await model.invoke([
-        new SystemMessage(ARCHITECT_PROMPT),
-        new HumanMessage(
-          `I'm editing the "${state.sectionName}" section of a World Bible. Check it against all other sections for consistency.\n\n` +
-          `--- SECTION BEING EDITED ---\n${state.sectionContent}\n\n` +
-          `--- OTHER SECTIONS ---\n${state.fullBible}`
-        ),
+        { role: 'system', content: ARCHITECT_PROMPT },
+        {
+          role: 'user',
+          content:
+            `I'm editing the "${state.sectionName}" section of a World Bible. Check it against all other sections for consistency.\n\n` +
+            `--- SECTION BEING EDITED ---\n${state.sectionContent}\n\n` +
+            `--- OTHER SECTIONS ---\n${state.fullBible}`,
+        },
       ]);
 
       const content = typeof response.content === 'string'
         ? response.content
         : JSON.stringify(response.content);
 
-      return { rawOutput: content };
+      return { rawOutput: content, error: null };
     } catch (err: any) {
       return { error: `LLM call failed: ${err.message}`, rawOutput: '' };
     }
@@ -121,13 +103,9 @@ export function buildWorldArchitectGraph(model: BaseChatModel) {
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/) || jsonStr.match(/(\{[\s\S]*\})/);
       if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-      const parsed = JSON.parse(jsonStr);
-      const validated = ArchitectReportSchema.parse(parsed);
-      return { report: validated };
+      return { report: ArchitectReportSchema.parse(JSON.parse(jsonStr)) };
     } catch {
-      if (state.retryCount < 1) {
-        return { retryCount: state.retryCount + 1 };
-      }
+      if (state.retryCount < 1) return { retryCount: state.retryCount + 1 };
       return {
         report: {
           sectionAnalyzed: state.sectionName,
@@ -140,19 +118,27 @@ export function buildWorldArchitectGraph(model: BaseChatModel) {
     }
   }
 
-  function shouldRetry(state: ArchState): string {
-    if (state.report) return END;
-    if (state.retryCount > 0 && !state.report) return 'analyze';
-    return END;
-  }
+  return {
+    async invoke(input: Partial<ArchState> & Pick<ArchState, 'worldId' | 'sectionName' | 'sectionContent'>): Promise<ArchState> {
+      let state: ArchState = {
+        otherSections: {},
+        fullBible: '',
+        rawOutput: '',
+        report: null,
+        retryCount: 0,
+        error: null,
+        ...input,
+      };
 
-  return new StateGraph(WorldArchitectState)
-    .addNode('gatherSections', gatherSections)
-    .addNode('analyze', analyze)
-    .addNode('validateOutput', validateOutput)
-    .addEdge(START, 'gatherSections')
-    .addEdge('gatherSections', 'analyze')
-    .addEdge('analyze', 'validateOutput')
-    .addConditionalEdges('validateOutput', shouldRetry)
-    .compile();
+      state = { ...state, ...(await gatherSections(state)) };
+
+      while (!state.report) {
+        state = { ...state, ...(await analyze(state)) };
+        state = { ...state, ...(await validateOutput(state)) };
+        if (state.report || state.retryCount > 1) break;
+      }
+
+      return state;
+    },
+  };
 }

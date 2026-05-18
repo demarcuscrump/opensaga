@@ -1,40 +1,25 @@
 /**
- * Proposal Analyst Agent — LangGraph StateGraph
+ * Proposal Analyst Agent
  *
- * Graph: START → gatherContext → analyze → validateOutput → END
- *                                    ↑           ↓
- *                                    └── retry (max 1)
- *
- * Auto-fetches World Bible + existing canon, then produces an
- * impartial analysis for community voters.
+ * Workflow: gatherContext -> analyze -> validateOutput, with one parse retry.
+ * Auto-fetches World Bible + existing canon, then produces voter-facing analysis.
  */
 
-import {
-  StateGraph,
-  START,
-  END,
-  Annotation,
-} from '@langchain/langgraph';
-import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import type { AgentChatModel } from './model-factory';
 import { fetchWorldBible, fetchCanonEntities } from './tools';
 import { ProposalAnalysisSchema, type ProposalAnalysis } from './schemas';
 
-// ─── State ──────────────────────────────────────────────────────────
-
-const ProposalAnalystState = Annotation.Root({
-  worldId: Annotation<string>,
-  proposalContent: Annotation<string>,
-  canonPreCheck: Annotation<string | undefined>,
-  worldBible: Annotation<string>,
-  existingCanon: Annotation<string>,
-  rawOutput: Annotation<string>,
-  analysis: Annotation<ProposalAnalysis | null>,
-  retryCount: Annotation<number>,
-  error: Annotation<string | null>,
-});
-
-type AnalystState = typeof ProposalAnalystState.State;
+type AnalystState = {
+  worldId: string;
+  proposalContent: string;
+  canonPreCheck?: string;
+  worldBible: string;
+  existingCanon: string;
+  rawOutput: string;
+  analysis: ProposalAnalysis | null;
+  retryCount: number;
+  error: string | null;
+};
 
 const ANALYST_PROMPT = `You are the Proposal Analyst — OpenSaga's impartial evaluator for community governance.
 
@@ -59,9 +44,7 @@ Rules:
 - The voterSummary should be readable by someone who hasn't read the full proposal
 - If a Canon Keeper pre-check is provided, reference its findings`;
 
-// ─── Graph Builder ──────────────────────────────────────────────────
-
-export function buildProposalAnalystGraph(model: BaseChatModel) {
+export function buildProposalAnalystGraph(model: AgentChatModel) {
   async function gatherContext(state: AnalystState): Promise<Partial<AnalystState>> {
     let bible = '';
     let canon = '';
@@ -71,7 +54,7 @@ export function buildProposalAnalystGraph(model: BaseChatModel) {
         bible = await fetchWorldBible.invoke({ worldId: state.worldId });
         canon = await fetchCanonEntities.invoke({ worldId: state.worldId });
       } catch {
-        // Proceed with what we have
+        // Keep the agent usable in demo/offline mode.
       }
     }
 
@@ -93,15 +76,15 @@ export function buildProposalAnalystGraph(model: BaseChatModel) {
       }
 
       const response = await model.invoke([
-        new SystemMessage(ANALYST_PROMPT),
-        new HumanMessage(userMessage),
+        { role: 'system', content: ANALYST_PROMPT },
+        { role: 'user', content: userMessage },
       ]);
 
       const content = typeof response.content === 'string'
         ? response.content
         : JSON.stringify(response.content);
 
-      return { rawOutput: content };
+      return { rawOutput: content, error: null };
     } catch (err: any) {
       return { error: `LLM call failed: ${err.message}`, rawOutput: '' };
     }
@@ -127,13 +110,9 @@ export function buildProposalAnalystGraph(model: BaseChatModel) {
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/) || jsonStr.match(/(\{[\s\S]*\})/);
       if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-      const parsed = JSON.parse(jsonStr);
-      const validated = ProposalAnalysisSchema.parse(parsed);
-      return { analysis: validated };
+      return { analysis: ProposalAnalysisSchema.parse(JSON.parse(jsonStr)) };
     } catch {
-      if (state.retryCount < 1) {
-        return { retryCount: state.retryCount + 1 };
-      }
+      if (state.retryCount < 1) return { retryCount: state.retryCount + 1 };
       return {
         analysis: {
           qualityScore: 50,
@@ -148,19 +127,28 @@ export function buildProposalAnalystGraph(model: BaseChatModel) {
     }
   }
 
-  function shouldRetry(state: AnalystState): string {
-    if (state.analysis) return END;
-    if (state.retryCount > 0 && !state.analysis) return 'analyze';
-    return END;
-  }
+  return {
+    async invoke(input: Partial<AnalystState> & Pick<AnalystState, 'worldId' | 'proposalContent'>): Promise<AnalystState> {
+      let state: AnalystState = {
+        canonPreCheck: undefined,
+        worldBible: '',
+        existingCanon: '',
+        rawOutput: '',
+        analysis: null,
+        retryCount: 0,
+        error: null,
+        ...input,
+      };
 
-  return new StateGraph(ProposalAnalystState)
-    .addNode('gatherContext', gatherContext)
-    .addNode('analyze', analyze)
-    .addNode('validateOutput', validateOutput)
-    .addEdge(START, 'gatherContext')
-    .addEdge('gatherContext', 'analyze')
-    .addEdge('analyze', 'validateOutput')
-    .addConditionalEdges('validateOutput', shouldRetry)
-    .compile();
+      state = { ...state, ...(await gatherContext(state)) };
+
+      while (!state.analysis) {
+        state = { ...state, ...(await analyze(state)) };
+        state = { ...state, ...(await validateOutput(state)) };
+        if (state.analysis || state.retryCount > 1) break;
+      }
+
+      return state;
+    },
+  };
 }

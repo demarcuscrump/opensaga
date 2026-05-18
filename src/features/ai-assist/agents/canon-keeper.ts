@@ -1,42 +1,25 @@
 /**
- * Canon Keeper Agent — LangGraph StateGraph
+ * Canon Keeper Agent
  *
- * Graph: START → gatherContext → analyze → validateOutput → END
- *                                   ↑                ↓
- *                                   └── retry (if parse fails, max 1)
- *
+ * Workflow: gatherContext -> analyze -> validateOutput, with one parse retry.
  * Auto-fetches World Bible + existing canon via tools.
- * Returns Zod-validated CanonReport.
  */
 
-import {
-  StateGraph,
-  START,
-  END,
-  Annotation,
-} from '@langchain/langgraph';
-import { SystemMessage, HumanMessage } from '@langchain/core/messages';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import type { AgentChatModel } from './model-factory';
 import { fetchWorldBible, fetchCanonEntities } from './tools';
 import { CanonReportSchema, type CanonReport } from './schemas';
 
-// ─── State Definition ───────────────────────────────────────────────
-
-const CanonKeeperState = Annotation.Root({
-  worldId: Annotation<string>,
-  proposalContent: Annotation<string>,
-  manualBible: Annotation<string | undefined>,
-  worldBible: Annotation<string>,
-  existingCanon: Annotation<string>,
-  rawOutput: Annotation<string>,
-  report: Annotation<CanonReport | null>,
-  retryCount: Annotation<number>,
-  error: Annotation<string | null>,
-});
-
-type CanonState = typeof CanonKeeperState.State;
-
-// ─── System Prompt ──────────────────────────────────────────────────
+type CanonState = {
+  worldId: string;
+  proposalContent: string;
+  manualBible?: string;
+  worldBible: string;
+  existingCanon: string;
+  rawOutput: string;
+  report: CanonReport | null;
+  retryCount: number;
+  error: string | null;
+};
 
 const CANON_KEEPER_PROMPT = `You are the Canon Keeper — OpenSaga's guardian of narrative consistency.
 
@@ -61,10 +44,7 @@ Rules:
 - Reference exact World Bible sections when citing conflicts
 - If no World Bible is provided, evaluate internal consistency only`;
 
-// ─── Graph Builder ──────────────────────────────────────────────────
-
-export function buildCanonKeeperGraph(model: BaseChatModel) {
-  // Node: Gather context from Supabase
+export function buildCanonKeeperGraph(model: AgentChatModel) {
   async function gatherContext(state: CanonState): Promise<Partial<CanonState>> {
     let bible = state.manualBible || '';
     let canon = '';
@@ -74,7 +54,7 @@ export function buildCanonKeeperGraph(model: BaseChatModel) {
         bible = bible || await fetchWorldBible.invoke({ worldId: state.worldId });
         canon = await fetchCanonEntities.invoke({ worldId: state.worldId });
       } catch {
-        // If tools fail, proceed with what we have
+        // Keep the agent usable in demo/offline mode.
       }
     }
 
@@ -84,29 +64,29 @@ export function buildCanonKeeperGraph(model: BaseChatModel) {
     };
   }
 
-  // Node: Analyze with LLM
   async function analyze(state: CanonState): Promise<Partial<CanonState>> {
     try {
       const response = await model.invoke([
-        new SystemMessage(CANON_KEEPER_PROMPT),
-        new HumanMessage(
-          `--- WORLD BIBLE (Source of Truth) ---\n${state.worldBible}\n\n` +
-          `--- EXISTING CANON (Do not contradict) ---\n${state.existingCanon}\n\n` +
-          `--- PROPOSED CONTENT (Analyze this) ---\n${state.proposalContent}`
-        ),
+        { role: 'system', content: CANON_KEEPER_PROMPT },
+        {
+          role: 'user',
+          content:
+            `--- WORLD BIBLE (Source of Truth) ---\n${state.worldBible}\n\n` +
+            `--- EXISTING CANON (Do not contradict) ---\n${state.existingCanon}\n\n` +
+            `--- PROPOSED CONTENT (Analyze this) ---\n${state.proposalContent}`,
+        },
       ]);
 
       const content = typeof response.content === 'string'
         ? response.content
         : JSON.stringify(response.content);
 
-      return { rawOutput: content };
+      return { rawOutput: content, error: null };
     } catch (err: any) {
       return { error: `LLM call failed: ${err.message}`, rawOutput: '' };
     }
   }
 
-  // Node: Validate output with Zod
   async function validateOutput(state: CanonState): Promise<Partial<CanonState>> {
     if (state.error) {
       return {
@@ -122,20 +102,13 @@ export function buildCanonKeeperGraph(model: BaseChatModel) {
     }
 
     try {
-      // Extract JSON from response (handle markdown code blocks)
       let jsonStr = state.rawOutput;
       const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/) || jsonStr.match(/(\{[\s\S]*\})/);
       if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
-      const parsed = JSON.parse(jsonStr);
-      const validated = CanonReportSchema.parse(parsed);
-      return { report: validated };
+      return { report: CanonReportSchema.parse(JSON.parse(jsonStr)) };
     } catch {
-      // Retry once
-      if (state.retryCount < 1) {
-        return { retryCount: state.retryCount + 1 };
-      }
-      // Final fallback
+      if (state.retryCount < 1) return { retryCount: state.retryCount + 1 };
       return {
         report: {
           score: 50,
@@ -149,23 +122,28 @@ export function buildCanonKeeperGraph(model: BaseChatModel) {
     }
   }
 
-  // Conditional: retry or finish
-  function shouldRetry(state: CanonState): string {
-    if (state.report) return END;
-    if (state.retryCount > 0 && !state.report) return 'analyze';
-    return END;
-  }
+  return {
+    async invoke(input: Partial<CanonState> & Pick<CanonState, 'worldId' | 'proposalContent'>): Promise<CanonState> {
+      let state: CanonState = {
+        manualBible: undefined,
+        worldBible: '',
+        existingCanon: '',
+        rawOutput: '',
+        report: null,
+        retryCount: 0,
+        error: null,
+        ...input,
+      };
 
-  // Build the graph
-  const graph = new StateGraph(CanonKeeperState)
-    .addNode('gatherContext', gatherContext)
-    .addNode('analyze', analyze)
-    .addNode('validateOutput', validateOutput)
-    .addEdge(START, 'gatherContext')
-    .addEdge('gatherContext', 'analyze')
-    .addEdge('analyze', 'validateOutput')
-    .addConditionalEdges('validateOutput', shouldRetry)
-    .compile();
+      state = { ...state, ...(await gatherContext(state)) };
 
-  return graph;
+      while (!state.report) {
+        state = { ...state, ...(await analyze(state)) };
+        state = { ...state, ...(await validateOutput(state)) };
+        if (state.report || state.retryCount > 1) break;
+      }
+
+      return state;
+    },
+  };
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { Users, FileText, ThumbsUp, Globe, Check, X, AlertCircle } from 'lucide-react';
 import { World, Character, WorldStatus, ContentStatus } from '../core/types';
 import { Link } from 'react-router-dom';
@@ -99,61 +99,79 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   rightElement?: React.ReactNode;
 }
 
-export const Input: React.FC<InputProps> = ({ label, icon: Icon, rightElement, className, ...props }) => (
-  <div className={`space-y-2 ${className}`}>
-    {label && <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>}
-    <div className="relative group">
-      {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-accent-primary transition-colors" size={16} strokeWidth={1.5} />}
-      <input 
-        className={`w-full bg-surface-base border border-border rounded-lg py-2.5 ${Icon ? 'pl-10' : 'pl-4'} pr-4 text-text-primary text-sm placeholder-text-tertiary focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/20 outline-none transition-all disabled:opacity-50`}
-        {...props}
-      />
-      {rightElement && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          {rightElement}
-        </div>
-      )}
+export const Input: React.FC<InputProps> = ({ label, icon: Icon, rightElement, className, id, ...props }) => {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {label && <label htmlFor={inputId} className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>}
+      <div className="relative group">
+        {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-accent-primary transition-colors" size={16} strokeWidth={1.5} />}
+        <input 
+          id={inputId}
+          className={`w-full bg-surface-base border border-border rounded-lg py-2.5 ${Icon ? 'pl-10' : 'pl-4'} pr-4 text-text-primary text-sm placeholder-text-tertiary focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/20 outline-none transition-all disabled:opacity-50`}
+          {...props}
+        />
+        {rightElement && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            {rightElement}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
 }
 
-export const TextArea: React.FC<TextAreaProps> = ({ label, className, ...props }) => (
-  <div className={`space-y-2 ${className}`}>
-    {label && <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>}
-    <textarea 
-      className="w-full bg-surface-base border border-border rounded-lg p-4 text-text-primary text-sm placeholder-text-tertiary focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/20 outline-none transition-all min-h-[120px] resize-y"
-      {...props}
-    />
-  </div>
-);
+export const TextArea: React.FC<TextAreaProps> = ({ label, className, id, ...props }) => {
+  const generatedId = useId();
+  const textAreaId = id ?? generatedId;
+
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {label && <label htmlFor={textAreaId} className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>}
+      <textarea 
+        id={textAreaId}
+        className="w-full bg-surface-base border border-border rounded-lg p-4 text-text-primary text-sm placeholder-text-tertiary focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/20 outline-none transition-all min-h-[120px] resize-y"
+        {...props}
+      />
+    </div>
+  );
+};
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   options: { value: string; label: string }[];
 }
 
-export const Select: React.FC<SelectProps> = ({ label, options, className, ...props }) => (
-  <div className={`space-y-2 ${className}`}>
-    {label && <label className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>}
-    <div className="relative">
-      <select 
-        className="w-full bg-surface-base border border-border rounded-lg py-2.5 pl-4 pr-10 text-text-primary text-sm focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/20 outline-none transition-all appearance-none cursor-pointer"
-        {...props}
-      >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-tertiary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+export const Select: React.FC<SelectProps> = ({ label, options, className, id, ...props }) => {
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
+
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {label && <label htmlFor={selectId} className="text-[11px] font-semibold text-text-tertiary uppercase tracking-widest">{label}</label>}
+      <div className="relative">
+        <select 
+          id={selectId}
+          className="w-full bg-surface-base border border-border rounded-lg py-2.5 pl-4 pr-10 text-text-primary text-sm focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/20 outline-none transition-all appearance-none cursor-pointer"
+          {...props}
+        >
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-tertiary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // --- Card Components ---
 

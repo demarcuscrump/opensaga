@@ -220,17 +220,22 @@ Every world has a Bible. Every proposal is judged against it. The Bible is the i
 
 ### Must Have (Launch Blockers)
 
-- [ ] Supabase auth (GitHub + Discord OAuth)
-- [ ] Real database persistence (replace all MOCK_* data)
-- [ ] Creator Studio (full god-tier version — see CREATOR_STUDIO_PRD.md)
-- [ ] Character creation with visual builder (appearance, stats, relationships)
-- [ ] World creation with Bible editor (structured sections, not just one text field)
-- [ ] Proposal → Vote → Canon pipeline (real-time, with time expiry)
-- [ ] User profiles with reputation, contribution history
-- [ ] World membership (join/leave/invite)
-- [ ] Activity feed (per-world and global)
+- [x] Supabase auth code path (GitHub, Discord, Google OAuth hooks)
+- [ ] Hosted OAuth provider configuration and redirect validation
+- [x] Real database schema, service layer, and RLS migration baseline
+- [x] Creator Studio MVP (see `CREATOR_STUDIO_PRD.md`)
+- [ ] Full god-tier Creator Studio v1
+- [x] Character creation with structured builder fields
+- [ ] Full visual builder with relationship graph, stats polish, and gallery
+- [x] World creation and World Seed path
+- [ ] Production structured Bible editor with rich text/markdown
+- [x] Proposal -> Vote -> Canon pipeline baseline
+- [ ] Server-trusted governance enforcement and scheduled tally deployment
+- [x] User profiles with reputation fields
+- [x] World membership baseline
+- [x] Activity feed baseline
 - [ ] Search (worlds, characters, lore entries)
-- [ ] Mobile responsive (all features usable on phone)
+- [ ] Mobile responsive production pass across all features
 
 ### Should Have (v1.1)
 

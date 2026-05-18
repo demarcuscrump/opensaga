@@ -2,7 +2,7 @@
 
 **Feature:** Creator Studio (God-Tier Creative Workspace)  
 **Priority:** P0 — Launch Blocker  
-**Status:** Existing basic version → Full rebuild required  
+**Status:** MVP implemented → Full v1 workspace in progress  
 **Target:** The single most impressive feature in OpenSaga. The reason creators choose this over World Anvil, Campfire, or Notion.
 
 ---
@@ -17,16 +17,16 @@ The Creator Studio is OpenSaga's **integrated creative workspace** — a dedicat
 
 ## Current State vs. Target State
 
-| Aspect | Current (v0) | Target (v1) |
+| Aspect | Current alpha | Target (v1) |
 |---|---|---|
-| Layout | Single prompt → output split pane | Multi-panel workspace with toolbars, canvas, and inspector |
-| Character creation | Text prompt only | Visual builder + stats + relationships + appearance + AI assist |
-| World creation | Basic form (name, description, genre) | Structured Bible editor with sections, factions, geography, rules |
-| AI tools | 4 simulated modes (character, lore, brainstorm, consistency) | 8 real AI tools with structured output, World Bible context injection |
-| Asset management | None | Gallery of created characters, worlds, lore entries, drafts |
-| Export | None | Export to proposal, export as markdown, export as JSON |
-| Collaboration | None | Share drafts, invite co-creators, version history |
-| Visual | Text-only output | Rich cards, stat blocks, relationship diagrams, color-coded powers |
+| Layout | Multi-panel Studio MVP with tool panel, canvas, inspector-style support panels, and status affordances | Full workspace with refined toolbars, canvas, and inspector |
+| Character creation | Character Forge with structured fields, tabs, draft persistence, proposal/export path | Visual builder + stats + relationships + appearance + AI assist |
+| World creation | World Seed tool and structured world-generation path | Structured Bible editor with sections, factions, geography, rules |
+| AI tools | 5 active tools: Character Forge, World Seed, Lore Crafter, Brainstorm, Canon Check | 8 real AI tools with structured output, World Bible context injection |
+| Asset management | Local drafts and image analysis path | Gallery of created characters, worlds, lore entries, drafts |
+| Export | Character export and proposal submission path | Export to proposal, markdown, JSON, and portable packages |
+| Collaboration | World membership exists; draft collaboration not implemented | Share drafts, invite co-creators, version history |
+| Visual | Richer cards and panels, but relationship/power/species visuals are roadmap | Rich cards, stat blocks, relationship diagrams, color-coded powers |
 
 ---
 
@@ -359,10 +359,10 @@ const CharacterSuggestionSchema = z.object({
 
 | Provider | Adapter Status | Notes |
 |---|---|---|
-| OpenAI (GPT-4, GPT-4o) | Priority 1 | Best structured output support |
-| Anthropic (Claude) | Priority 1 | Best for long-form lore writing |
-| OpenRouter (any model) | Priority 2 | Gives access to all models via single key |
-| Ollama (local) | Priority 3 | Privacy-first users, no API cost |
+| OpenAI (GPT-4o-class models) | Implemented | Best structured output support |
+| Anthropic (Claude) | Implemented | Strong for long-form lore writing |
+| OpenRouter (any model) | Implemented | Gives access to many models through one key |
+| Ollama (local) | Implemented | Privacy-first local model option |
 
 ---
 
