@@ -11,6 +11,18 @@ First off, thank you for considering contributing to OpenSaga! It's people like 
 5. Ensure your code aligns with the **Feature-Sliced Design** outlined in `ARCHITECTURE.md`.
 6. Keep your code modular and use existing UI components from `src/components` whenever possible to maintain a consistent aesthetic.
 
+## First-Time Contributors
+
+Start with `docs/contributor-roadmap.md`. It lists good first issue areas, contributor-friendly workstreams, and the next public beta milestones.
+
+Good first contributions usually fall into one of these lanes:
+
+- Documentation polish for setup, deployment, and core concepts
+- Accessibility improvements for forms, modals, focus states, and mobile navigation
+- Playwright tests for user journeys that already exist
+- Small UI consistency fixes using existing components
+- Supabase/RLS documentation and test-matrix improvements
+
 ## Local Commands
 
 | Command | Purpose |
@@ -20,6 +32,7 @@ First off, thank you for considering contributing to OpenSaga! It's people like 
 | `npm run test` | Run the Vitest suite |
 | `npm run build` | Build the production bundle |
 | `npm run check` | Run typecheck, tests, and build |
+| `npm run test:e2e` | Run Playwright smoke tests |
 
 ## Pull Request Process
 
@@ -28,6 +41,12 @@ First off, thank you for considering contributing to OpenSaga! It's people like 
 3. Update the `README.md` with details of changes to the interface or new environment variables.
 4. Keep Supabase access behind `src/services`, hooks, or `src/lib`; components should not casually own database logic.
 5. Your PR will be reviewed by the maintainers. We focus heavily on code quality, UI vibe (clean, structured, community-driven aesthetic), and architectural consistency.
+
+## Security and Safety
+
+Do not open public issues for vulnerabilities, exposed keys, auth bypasses, RLS bypasses, or XSS reports. Follow `SECURITY.md`.
+
+Do not commit `.env`, `.env.local`, production Supabase service role keys, provider API keys, screenshots with secrets, or real user data.
 
 ## UI/UX Guidelines
 

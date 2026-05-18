@@ -157,6 +157,10 @@ npm run test:e2e
 | [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) | Current readiness audit, risks, and launch checklist |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, data flow, AI layer, boundaries |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution workflow and PR expectations |
+| [docs/contributor-roadmap.md](./docs/contributor-roadmap.md) | Good first issue areas and public beta contributor lanes |
+| [docs/deployment.md](./docs/deployment.md) | Self-hosting and deployment guide |
+| [SECURITY.md](./SECURITY.md) | Security policy and private vulnerability reporting |
+| [SUPPORT.md](./SUPPORT.md) | Where to ask questions or get help |
 | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Community standards |
 
 ---
@@ -175,6 +179,7 @@ npm run test:e2e
 - [x] Route-level lazy loading and manual vendor bundle splitting
 - [x] Vitest suite, Playwright smoke E2E, TypeScript typecheck, and GitHub Actions CI
 - [x] MIT license and open-source contribution docs
+- [x] Security policy, support guide, issue templates, and pull request template
 
 ### Before Public Beta
 - [ ] Configure hosted Supabase project and OAuth providers

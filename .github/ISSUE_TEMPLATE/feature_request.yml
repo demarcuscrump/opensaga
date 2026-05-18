@@ -1,0 +1,43 @@
+name: Feature Request
+description: Suggest a creator, governance, or community feature.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Creator or Community Problem
+      description: What problem should OpenSaga solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: What should change?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Product Area
+      options:
+        - Creator Studio
+        - Worlds and discovery
+        - Proposal/Vote/Canon governance
+        - Profiles and reputation
+        - Supabase/backend
+        - AI/BYOK
+        - Accessibility
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context

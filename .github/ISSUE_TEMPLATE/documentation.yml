@@ -1,0 +1,22 @@
+name: Documentation
+description: Suggest a docs fix or improvement.
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Document or Page
+      placeholder: README.md, docs/deployment.md, ARCHITECTURE.md
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What should improve?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Change
