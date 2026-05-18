@@ -53,6 +53,7 @@ It is still pre-public-beta. Before production launch, the project needs a hoste
 - Multi-tool creative workspace with Character Forge, World Seed, Creation DNA, Lore Crafter, Brainstorm, and Canon Check.
 - Draft persistence through local storage.
 - Creation DNA originality lens with controlled tags, human review, and local vault comparison.
+- Character board framework with selectable sections for image-seeded character profiles.
 - Character export options.
 - Image analysis path for character references.
 - Agent debug logging and streaming hooks.

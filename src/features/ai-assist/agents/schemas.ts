@@ -212,6 +212,68 @@ export const CreationDnaReportSchema = z.object({
 export type CreationDnaReport = z.infer<typeof CreationDnaReportSchema>;
 export type CreationDnaSimilar = z.infer<typeof CreationDnaSimilarSchema>;
 
+// ─── Character Board Framework ──────────────────────────────────────
+
+export const CHARACTER_BOARD_SECTIONS = [
+  {
+    id: 'coreIdentity',
+    label: 'Core Identity',
+    description: 'Name, aliases, age, pronouns, species, role, titles, and quick identifying facts.',
+  },
+  {
+    id: 'physicalAppearance',
+    label: 'Physical Appearance',
+    description: 'Body, hair, eyes, skin tone, wardrobe, distinguishing marks, and reference image cues.',
+  },
+  {
+    id: 'personality',
+    label: 'Personality',
+    description: 'Core traits, strengths, flaws, quirks, likes, dislikes, fears, and insecurities.',
+  },
+  {
+    id: 'background',
+    label: 'Background / Backstory',
+    description: 'Birthplace, upbringing, family, education, training, trauma, and key life events.',
+  },
+  {
+    id: 'motivation',
+    label: 'Goals & Motivation',
+    description: 'Short-term goals, long-term dreams, internal conflict, and external pressure.',
+  },
+  {
+    id: 'skills',
+    label: 'Skills, Powers & Limits',
+    description: 'Talents, specialties, power rules, weapons, equipment, weaknesses, and costs.',
+  },
+  {
+    id: 'relationships',
+    label: 'Relationships',
+    description: 'Friends, rivals, love interests, enemies, mentors, family, and story ties.',
+  },
+  {
+    id: 'voiceStyle',
+    label: 'Voice & Style',
+    description: 'Speech pattern, accent, favorite phrases, rhythm, theme song, and aesthetic feel.',
+  },
+  {
+    id: 'visualMotifs',
+    label: 'Visual Motifs / Moodboard',
+    description: 'Colors, symbols, shapes, textures, repeated imagery, and art-direction notes.',
+  },
+  {
+    id: 'storyRole',
+    label: 'Story Role & Arc',
+    description: 'Archetype, plot function, transformation arc, symbolism, and themes represented.',
+  },
+  {
+    id: 'canonNotes',
+    label: 'Canon / Creator Notes',
+    description: 'Draft status, proposal readiness, creator intent, boundaries, and things not to change.',
+  },
+] as const;
+
+export type CharacterBoardSectionId = typeof CHARACTER_BOARD_SECTIONS[number]['id'];
+
 // ─── Agent State Schemas ────────────────────────────────────────────
 
 export const AgentContextSchema = z.object({

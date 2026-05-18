@@ -10,6 +10,7 @@ import {
   ProposalAnalysisSchema,
   CREATION_DNA_GENRE_GUIDE,
   CreationDnaReportSchema,
+  CHARACTER_BOARD_SECTIONS,
 } from '../schemas';
 
 describe('CanonReportSchema', () => {
@@ -179,6 +180,19 @@ describe('CreationDnaReportSchema', () => {
     for (const genre of CREATION_DNA_GENRE_GUIDE) {
       expect(genre.description.length).toBeGreaterThan(40);
       expect(genre.anchors.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+});
+
+describe('CHARACTER_BOARD_SECTIONS', () => {
+  it('covers the default selectable character board framework', () => {
+    expect(CHARACTER_BOARD_SECTIONS).toHaveLength(11);
+    expect(CHARACTER_BOARD_SECTIONS.map(section => section.id)).toContain('coreIdentity');
+    expect(CHARACTER_BOARD_SECTIONS.map(section => section.id)).toContain('canonNotes');
+
+    for (const section of CHARACTER_BOARD_SECTIONS) {
+      expect(section.label.length).toBeGreaterThan(4);
+      expect(section.description.length).toBeGreaterThan(40);
     }
   });
 });

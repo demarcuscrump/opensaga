@@ -84,6 +84,26 @@ The crown jewel. A multi-tab character creation experience that produces rich, d
 - **Abilities:** "Generate a power set that fits within [World's Power System] with balanced limitations"
 - **Relationships:** "Suggest potential connections to existing Canon characters in this world"
 
+#### Character Board Framework
+
+Character Forge also supports a selectable board framework. A creator can upload generated character art, run image analysis, edit the extracted fields, then choose which sections appear on the final board.
+
+| Board Section | Purpose |
+|---|---|
+| Core Identity | Name, aliases, age, pronouns, species, role, titles, and quick identifying facts |
+| Physical Appearance | Body, hair, eyes, skin tone, wardrobe, distinguishing marks, and reference image cues |
+| Personality | Core traits, strengths, flaws, quirks, likes, dislikes, fears, and insecurities |
+| Background / Backstory | Birthplace, upbringing, family, education, training, trauma, and key life events |
+| Goals & Motivation | Short-term goals, long-term dreams, internal conflict, and external pressure |
+| Skills, Powers & Limits | Talents, specialties, power rules, weapons, equipment, weaknesses, and costs |
+| Relationships | Friends, rivals, love interests, enemies, mentors, family, and story ties |
+| Voice & Style | Speech pattern, accent, favorite phrases, rhythm, theme song, and aesthetic feel |
+| Visual Motifs / Moodboard | Colors, symbols, shapes, textures, repeated imagery, and art-direction notes |
+| Story Role & Arc | Archetype, plot function, transformation arc, symbolism, and represented themes |
+| Canon / Creator Notes | Draft status, proposal readiness, creator intent, boundaries, and things not to change |
+
+**Rule:** Board sections are creator-selectable. AI can suggest or populate fields, but the creator decides what appears on the board.
+
 #### Output Format
 
 When saved/published, a Character Forge output becomes a **Character Card** — a structured, visually rich component that displays in the world's character roster:

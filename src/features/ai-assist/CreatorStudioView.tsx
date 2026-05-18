@@ -9,8 +9,8 @@ import type { AIProvider } from './AIEngine';
 import { worldsApi } from '../../services/api.worlds';
 import type { World } from '../../core/types';
 import { useAgents } from '../../hooks/useAgents';
-import { CREATION_DNA_GENRE_GUIDE } from './agents/schemas';
-import type { CanonReport, CreationDnaReport, DeepenerResult } from './agents/schemas';
+import { CHARACTER_BOARD_SECTIONS, CREATION_DNA_GENRE_GUIDE } from './agents/schemas';
+import type { CanonReport, CharacterBoardSectionId, CreationDnaReport, DeepenerResult } from './agents/schemas';
 import type { VisionAnalysis } from './agents/orchestrator';
 import { AgentDebugPanel } from './AgentDebugPanel';
 import { AgentErrorBoundary } from './AgentErrorBoundary';
@@ -79,6 +79,19 @@ const WORLD_SEED_TEMPLATE: WorldSeedSection[] = [
 
 const DRAFT_KEY = 'opensaga-studio-drafts';
 const DNA_VAULT_KEY = 'opensaga-creation-dna-vault';
+const DEFAULT_CHARACTER_BOARD_SECTIONS: CharacterBoardSectionId[] = [
+  'coreIdentity',
+  'physicalAppearance',
+  'personality',
+  'background',
+  'motivation',
+  'skills',
+  'relationships',
+  'voiceStyle',
+  'visualMotifs',
+  'storyRole',
+  'canonNotes',
+];
 
 function saveDraftToStorage(tool: StudioTool, data: any) {
   try {
@@ -93,6 +106,13 @@ function loadDraftFromStorage(tool: StudioTool): any | null {
     const all = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
     return all[tool]?.data || null;
   } catch { return null; }
+}
+
+function normalizeBoardSections(value: unknown): CharacterBoardSectionId[] {
+  if (!Array.isArray(value)) return DEFAULT_CHARACTER_BOARD_SECTIONS;
+  const valid = new Set(CHARACTER_BOARD_SECTIONS.map(section => section.id));
+  const next = value.filter((id): id is CharacterBoardSectionId => typeof id === 'string' && valid.has(id as CharacterBoardSectionId));
+  return next.length > 0 ? next : DEFAULT_CHARACTER_BOARD_SECTIONS;
 }
 
 function loadDnaVaultFromStorage(): CreationDnaVaultEntry[] {
@@ -249,6 +269,7 @@ export const CreatorStudioView = () => {
   const [activeTool, setActiveTool] = useState<StudioTool>('character');
   const [charTab, setCharTab] = useState('identity');
   const [character, setCharacter] = useState<CharacterDraft>(EMPTY_CHARACTER);
+  const [selectedBoardSections, setSelectedBoardSections] = useState<CharacterBoardSectionId[]>(DEFAULT_CHARACTER_BOARD_SECTIONS);
   const [worldSections, setWorldSections] = useState<WorldSeedSection[]>(WORLD_SEED_TEMPLATE.map(s => ({ ...s })));
   const [activeSection, setActiveSection] = useState(0);
   const [lorePrompt, setLorePrompt] = useState('');
@@ -286,7 +307,14 @@ export const CreatorStudioView = () => {
   // Load drafts on mount
   useEffect(() => {
     const charDraft = loadDraftFromStorage('character');
-    if (charDraft) setCharacter(charDraft);
+    if (charDraft) {
+      if (charDraft.character) {
+        setCharacter(charDraft.character);
+        setSelectedBoardSections(normalizeBoardSections(charDraft.boardSections));
+      } else {
+        setCharacter(charDraft);
+      }
+    }
     const worldDraft = loadDraftFromStorage('worldseed');
     if (worldDraft) setWorldSections(worldDraft);
     const dnaDraft = loadDraftFromStorage('dna');
@@ -298,13 +326,13 @@ export const CreatorStudioView = () => {
   // Auto-save every 30s
   useEffect(() => {
     const interval = setInterval(() => {
-      saveDraftToStorage('character', character);
+      saveDraftToStorage('character', { character, boardSections: selectedBoardSections });
       saveDraftToStorage('worldseed', worldSections);
       saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
       setLastSaved(new Date().toLocaleTimeString());
     }, 30000);
     return () => clearInterval(interval);
-  }, [character, worldSections, dnaIdea, dnaReviewNotes]);
+  }, [character, selectedBoardSections, worldSections, dnaIdea, dnaReviewNotes]);
 
   // Keyboard shortcuts (per CREATOR_STUDIO_PRD.md §Keyboard Shortcuts)
   useEffect(() => {
@@ -314,7 +342,7 @@ export const CreatorStudioView = () => {
       // Cmd+S — Save draft
       if (isMod && e.key === 's') {
         e.preventDefault();
-        saveDraftToStorage('character', character);
+        saveDraftToStorage('character', { character, boardSections: selectedBoardSections });
         saveDraftToStorage('worldseed', worldSections);
         saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
         setLastSaved(new Date().toLocaleTimeString());
@@ -332,7 +360,7 @@ export const CreatorStudioView = () => {
       if (isMod && e.shiftKey && e.key === 'p') {
         e.preventDefault();
         setOutput('Submit as Proposal flow coming soon. Your draft has been saved.');
-        saveDraftToStorage('character', character);
+        saveDraftToStorage('character', { character, boardSections: selectedBoardSections });
         saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
       }
       // Cmd+1-6 — Switch tool
@@ -347,10 +375,19 @@ export const CreatorStudioView = () => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [character, worldSections, dnaIdea, dnaReviewNotes, showSettings, activeTool, isGenerating, dnaVault]);
+  }, [character, selectedBoardSections, worldSections, dnaIdea, dnaReviewNotes, showSettings, activeTool, isGenerating, dnaVault]);
 
   const updateChar = (field: keyof CharacterDraft, value: string) => {
     setCharacter(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleBoardSection = (sectionId: CharacterBoardSectionId) => {
+    setSelectedBoardSections(prev => {
+      if (prev.includes(sectionId)) {
+        return prev.length === 1 ? prev : prev.filter(id => id !== sectionId);
+      }
+      return [...prev, sectionId];
+    });
   };
 
   // ─── Image Upload + Vision Analysis ─────────────────────────────
@@ -574,7 +611,7 @@ export const CreatorStudioView = () => {
   };
 
   const handleSaveDraft = () => {
-    saveDraftToStorage('character', character);
+    saveDraftToStorage('character', { character, boardSections: selectedBoardSections });
     saveDraftToStorage('worldseed', worldSections);
     saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
     setLastSaved(new Date().toLocaleTimeString());
@@ -759,6 +796,37 @@ export const CreatorStudioView = () => {
                       </div>
                     </div>
                   )}
+                </div>
+
+                <div className="px-6 py-3 border-y border-border bg-surface-elevated/40">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div>
+                      <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest">Character Board</div>
+                      <div className="text-xs text-text-secondary mt-0.5">{selectedBoardSections.length} sections selected</div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedBoardSections(DEFAULT_CHARACTER_BOARD_SECTIONS)}
+                      className="text-[10px] text-text-tertiary hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/30 rounded px-2 py-1"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {CHARACTER_BOARD_SECTIONS.map(section => (
+                      <label
+                        key={section.id}
+                        className="flex items-center gap-2 min-h-10 px-2.5 py-2 rounded-lg bg-surface-overlay border border-border text-xs text-text-secondary hover:border-border-accent transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedBoardSections.includes(section.id)}
+                          onChange={() => toggleBoardSection(section.id)}
+                          className="h-3.5 w-3.5 rounded border-border accent-accent-primary"
+                        />
+                        <span className="leading-snug">{section.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Tab bar */}
@@ -1348,7 +1416,13 @@ export const CreatorStudioView = () => {
                   {output}
                 </div>
               ) : activeTool === 'character' ? (
-                <CharacterPreview character={character} />
+                <CharacterBoardPreview
+                  character={character}
+                  selectedSections={selectedBoardSections}
+                  imagePreview={charImagePreview}
+                  selectedWorld={selectedWorld}
+                  aiAssisted={Boolean(visionResult || deepenerResult)}
+                />
               ) : activeTool === 'worldseed' ? (
                 <WorldSeedPreview sections={worldSections} />
               ) : (
@@ -1446,42 +1520,202 @@ function DnaTagGroup({ label, tags, compact }: { label: string; tags: string[]; 
   );
 }
 
-function CharacterPreview({ character }: { character: CharacterDraft }) {
+function splitBoardText(value: string) {
+  return value
+    .split(/\n|;|\u2022/)
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function BoardDetailList({ items }: { items: Array<{ label: string; value?: string | null }> }) {
+  const filled = items.filter(item => item.value && item.value.trim());
+  if (filled.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      {filled.map(item => (
+        <div key={item.label} className="text-xs">
+          <span className="text-text-tertiary">{item.label}: </span>
+          <span className="text-text-secondary">{item.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BoardTextBlock({ value, clamp = 'line-clamp-4' }: { value?: string | null; clamp?: string }) {
+  if (!value?.trim()) return null;
+  return <p className={`text-xs text-text-secondary leading-relaxed ${clamp}`}>{value}</p>;
+}
+
+function BoardBulletList({ value }: { value?: string | null }) {
+  const items = value ? splitBoardText(value) : [];
+  if (items.length === 0) return null;
+
+  return (
+    <div className="space-y-1">
+      {items.slice(0, 4).map(item => (
+        <p key={item} className="text-xs text-text-secondary leading-relaxed">• {item}</p>
+      ))}
+    </div>
+  );
+}
+
+function CharacterBoardSection({ title, children }: { title: string; children: React.ReactNode }) {
+  if (!children) return null;
+  return (
+    <div className="border border-border rounded-xl bg-surface-overlay/60 p-3">
+      <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-2">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function CharacterBoardPreview({
+  character,
+  selectedSections,
+  imagePreview,
+  selectedWorld,
+  aiAssisted,
+}: {
+  character: CharacterDraft;
+  selectedSections: CharacterBoardSectionId[];
+  imagePreview: string | null;
+  selectedWorld: string;
+  aiAssisted: boolean;
+}) {
   const hasContent = character.name || character.archetype;
   if (!hasContent) return (
     <div className="text-center text-text-tertiary py-10 space-y-2">
       <User size={24} strokeWidth={1} className="mx-auto" />
-      <p className="text-xs">Fill in the Identity tab to see a preview</p>
+      <p className="text-xs">Character board preview appears here</p>
     </div>
   );
+
+  const isSelected = (id: CharacterBoardSectionId) => selectedSections.includes(id);
 
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <div className="w-16 h-16 mx-auto rounded-full bg-surface-overlay border border-border flex items-center justify-center text-2xl font-serif text-accent-primary mb-3">
-          {character.name?.charAt(0)?.toUpperCase() || '?'}
-        </div>
+        {imagePreview ? (
+          <img src={imagePreview} alt="" className="w-20 h-24 mx-auto rounded-xl object-cover border border-border shadow-sm mb-3" />
+        ) : (
+          <div className="w-16 h-16 mx-auto rounded-full bg-surface-overlay border border-border flex items-center justify-center text-2xl font-serif text-accent-primary mb-3">
+            {character.name?.charAt(0)?.toUpperCase() || '?'}
+          </div>
+        )}
         <h4 className="font-serif text-base text-text-primary">{character.name || 'Unnamed'}</h4>
         {character.archetype && <p className="text-xs text-text-tertiary">{character.archetype}</p>}
         {character.species && <p className="text-[11px] text-text-tertiary">{character.species} · {character.age || '?'}</p>}
       </div>
-      {character.appearance && (
-        <div>
-          <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1">Appearance</div>
-          <p className="text-xs text-text-secondary leading-relaxed line-clamp-4">{character.appearance}</p>
-        </div>
+
+      {isSelected('coreIdentity') && (
+        <CharacterBoardSection title="Core Identity">
+          <BoardDetailList items={[
+            { label: 'Name', value: character.name },
+            { label: 'Aliases', value: character.aliases },
+            { label: 'Age', value: character.age },
+            { label: 'Pronouns', value: character.pronouns },
+            { label: 'Species', value: character.species },
+            { label: 'Role', value: character.archetype },
+          ]} />
+        </CharacterBoardSection>
       )}
-      {character.powers && (
-        <div>
-          <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1">Powers</div>
-          <p className="text-xs text-text-secondary leading-relaxed line-clamp-4">{character.powers}</p>
-        </div>
+
+      {isSelected('physicalAppearance') && (
+        <CharacterBoardSection title="Physical Appearance">
+          <>
+            <BoardTextBlock value={character.appearance} />
+            <BoardDetailList items={[
+              { label: 'Features', value: character.distinguishingFeatures },
+              { label: 'Wardrobe', value: character.attire },
+            ]} />
+          </>
+        </CharacterBoardSection>
       )}
-      {character.backstory && (
-        <div>
-          <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1">Backstory</div>
-          <p className="text-xs text-text-secondary leading-relaxed line-clamp-6">{character.backstory}</p>
-        </div>
+
+      {isSelected('personality') && (
+        <CharacterBoardSection title="Personality">
+          <BoardDetailList items={[
+            { label: 'Quirks', value: character.quirks },
+            { label: 'Fears', value: character.fears },
+            { label: 'Desires', value: character.desires },
+          ]} />
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('background') && (
+        <CharacterBoardSection title="Background / Backstory">
+          <>
+            <BoardTextBlock value={character.backstory} clamp="line-clamp-6" />
+            <BoardBulletList value={character.formativeEvents} />
+            <BoardDetailList items={[{ label: 'Secrets', value: character.secrets }]} />
+          </>
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('motivation') && (
+        <CharacterBoardSection title="Goals & Motivation">
+          <BoardDetailList items={[
+            { label: 'Drive', value: character.desires },
+            { label: 'Internal pressure', value: character.fears },
+          ]} />
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('skills') && (
+        <CharacterBoardSection title="Skills, Powers & Limits">
+          <>
+            <BoardBulletList value={character.powers} />
+            <BoardDetailList items={[{ label: 'Limits', value: character.limitations }]} />
+          </>
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('relationships') && (
+        <CharacterBoardSection title="Relationships">
+          <BoardDetailList items={[
+            { label: 'World', value: selectedWorld || 'Manual draft' },
+            { label: 'Story ties', value: character.backstory ? 'Derived from backstory and proposal context' : '' },
+          ]} />
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('voiceStyle') && (
+        <CharacterBoardSection title="Voice & Style">
+          <BoardDetailList items={[
+            { label: 'Speech', value: character.speechPattern },
+            { label: 'Mannerisms', value: character.quirks },
+          ]} />
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('visualMotifs') && (
+        <CharacterBoardSection title="Visual Motifs / Moodboard">
+          <BoardDetailList items={[
+            { label: 'Outfit', value: character.attire },
+            { label: 'Features', value: character.distinguishingFeatures },
+          ]} />
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('storyRole') && (
+        <CharacterBoardSection title="Story Role & Arc">
+          <BoardDetailList items={[
+            { label: 'Archetype', value: character.archetype },
+            { label: 'Arc pressure', value: character.desires || character.fears },
+          ]} />
+        </CharacterBoardSection>
+      )}
+
+      {isSelected('canonNotes') && (
+        <CharacterBoardSection title="Canon / Creator Notes">
+          <BoardDetailList items={[
+            { label: 'Status', value: 'Draft' },
+            { label: 'World', value: selectedWorld || 'Unassigned' },
+            { label: 'AI-assisted', value: aiAssisted ? 'Yes' : 'No' },
+          ]} />
+        </CharacterBoardSection>
       )}
     </div>
   );
