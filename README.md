@@ -156,7 +156,7 @@ npm run test:e2e
 | [CREATOR_STUDIO_PRD.md](./CREATOR_STUDIO_PRD.md) | Creator Studio product spec and phased roadmap |
 | [COPYWRITING_GUIDE.md](./COPYWRITING_GUIDE.md) | Brand voice, vocabulary, microcopy patterns |
 | [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) | Current readiness audit, risks, and launch checklist |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, data flow, AI layer, boundaries |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, data flow, AI layer, boundaries, and Creation DNA architecture decision |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution workflow and PR expectations |
 | [docs/contributor-roadmap.md](./docs/contributor-roadmap.md) | Good first issue areas and public beta contributor lanes |
 | [docs/deployment.md](./docs/deployment.md) | Self-hosting and deployment guide |

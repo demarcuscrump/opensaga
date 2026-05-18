@@ -79,7 +79,7 @@ Good medium-sized tasks:
 - Relationship Mapper MVP
 - Power System Generator MVP
 - Species/Race Builder MVP
-- Shared Creation DNA vault backed by Supabase/Postgres vector search
+- Shared Creation DNA vault backed by Supabase/Postgres vector search, preserving the TypeScript agent interface until a backend orchestration service exists
 - Markdown export for generated characters and lore
 - Richer draft gallery
 

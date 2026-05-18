@@ -211,6 +211,7 @@ Structured originality lens for concepts before they become characters, worlds, 
 - **Output:** Controlled genre, emotion, scale, power, vibe, anchor, differentiator, and pitch fields
 - **Feature:** Local DNA vault comparison for near-match detection
 - **Feature:** Human review notes before saving to the vault
+- **Architecture note:** Implemented in the native TypeScript/Zod agent layer for alpha. Python/LangGraph/Chroma is deferred until OpenSaga has a backend orchestration service.
 - **Production path:** Move local vault comparison to Supabase/Postgres vector search when hosted collaboration needs shared originality checks
 
 ---

@@ -127,6 +127,19 @@ Supported providers:
 
 API keys are stored in browser local storage. They are not sent to OpenSaga servers, but local storage is still exposed to XSS. Treat CSP, dependency hygiene, and input sanitization as launch blockers.
 
+### Creation DNA Architecture Decision
+
+Creation DNA is intentionally implemented in the existing browser-first TypeScript agent layer instead of a Python/LangGraph/Chroma sidecar.
+
+Reasons:
+
+- OpenSaga is currently a Vite React + Supabase app; adding Python would create a second runtime for contributors to install, run, test, and deploy.
+- Existing AI tools already use TypeScript workflows, Zod-validated structured output, browser BYOK provider calls, agent logging, and local demo mode.
+- The current originality check only needs a human-reviewed local DNA vault, so a hosted vector service would be premature infrastructure.
+- The likely production path is Supabase Postgres plus vector search for a shared DNA vault, which fits the existing backend boundary better than Chroma at this stage.
+
+LangGraph-style orchestration is still compatible with the long-term direction. If OpenSaga later adds a backend AI orchestration service, the Creation DNA flow can move from local vault comparison to a server workflow with shared vector search, audit logging, and stronger moderation controls.
+
 ## Testing and CI
 
 Local quality gates:
