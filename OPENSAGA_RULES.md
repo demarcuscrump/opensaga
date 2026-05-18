@@ -56,10 +56,27 @@ Every world has a Bible. Every proposal is judged against it. The Bible is the i
 
 | Mode | Codename | When to Use | Vibe |
 |---|---|---|---|
-| **Dark** | `noir` | Default. Creative sessions, night owls, immersion. | Deep, cinematic, moody. Like editing in a film studio at 2am. |
-| **Light** | `paper` | Daytime readability, accessibility, long writing sessions. | Clean, warm, like a manuscript on aged paper. |
+| **Light** | `paper` | Default. Discovery, reading, governance, public archive pages. | Clean, warm, like a manuscript on aged paper. |
+| **Dark** | `noir` | Creative sessions, night owls, immersion. | Deep, cinematic, moody. Like editing in a film studio at 2am. |
 
-### 4.2 Color Tokens (Semantic)
+### 4.2 Brand Color Rule
+
+**OpenSaga is monochrome. Worlds are colorful. Canon is gold.**
+
+OpenSaga itself should feel like a neutral archive and source of truth. The platform uses a warm monochrome editorial base so user-generated worlds, factions, maps, symbols, characters, and lore styles can bring their own visual identity without fighting the product chrome.
+
+| Role | Token | Hex |
+|---|---|---:|
+| Canon Black | `brand.black` | `#0B0B0D` |
+| Archive White | `brand.archive` | `#FAF9F6` |
+| Soft Parchment | `brand.parchment` | `#F3EFE7` |
+| Mist Grey | `brand.mist` | `#DCD8D0` |
+| Scribe Grey | `brand.scribe` | `#6E6A63` |
+| Canon Gold | `brand.gold` | `#C6A15B` |
+
+Use Canon Gold for Canon badges, accepted entries, official World Bible moments, and small ceremonial highlights. Use world accent colors only inside world-specific surfaces.
+
+### 4.3 Color Tokens (Semantic)
 
 ```
 --surface-base          → Canvas background
@@ -68,17 +85,20 @@ Every world has a Bible. Every proposal is judged against it. The Bible is the i
 --text-primary          → Body text, headings
 --text-secondary        → Descriptions, supporting text
 --text-tertiary         → Placeholders, labels, captions
---accent-primary        → CTAs, active states, links (warm gold in noir)
+--accent-primary        → CTAs, active states, links (black in paper, archive white in noir)
 --accent-hover          → Hover state of accent
---accent-muted          → Accent background (10% opacity)
+--accent-muted          → Canon Gold background (low opacity)
 --border                → Default borders
 --border-accent         → Highlighted borders (active cards, focused inputs)
---status-canon          → Green — approved, live, healthy
---status-rejected       → Red — rejected, error, destructive
---status-proposal       → Gold/amber — pending, in-progress, voting
+--status-proposal       → Mythic Violet — imagination, new ideas
+--status-vote           → Council Blue — voting and community process
+--status-canon          → Canon Gold — official accepted truth
+--status-rejected       → Ash Grey — rejected, archived, inactive
+--status-conflict       → Ember — continuity issue or needs review
+--world-accent          → Per-world accent used only on world-specific surfaces
 ```
 
-### 4.3 Typography
+### 4.4 Typography
 
 - **Headings:** Serif (literary, storytelling feel). Currently system serif stack.
 - **Body:** Sans-serif (clean readability). System sans stack.
@@ -86,7 +106,7 @@ Every world has a Bible. Every proposal is judged against it. The Bible is the i
 - **Sizes:** Base 14px. Headings follow modular scale (1.25 ratio).
 - **Rule:** Headings are always `font-serif`. Never use serif for body text.
 
-### 4.4 Spacing & Layout
+### 4.5 Spacing & Layout
 
 - **Max content width:** 1280px (6xl)
 - **Card padding:** 20-32px (p-5 to p-8)
@@ -95,7 +115,7 @@ Every world has a Bible. Every proposal is judged against it. The Bible is the i
 - **Transitions:** 200ms for interactions, 300ms for layout shifts, 500ms for page transitions
 - **Animation:** Subtle. `animate-fade-in` on page entry. `animate-breathe` on background glows. No bounce, no jiggle, no confetti.
 
-### 4.5 Elevation & Depth
+### 4.6 Elevation & Depth
 
 - Cards: `border border-border` (no box-shadow)
 - Modals: `shadow-2xl` + backdrop blur

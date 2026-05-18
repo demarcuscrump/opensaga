@@ -78,7 +78,7 @@ It is still pre-public-beta. Before production launch, the project needs a hoste
 | Framework | React 19 + TypeScript 5.8 |
 | Build | Vite 6 |
 | Routing | React Router v7 |
-| Styling | Tailwind CSS via Vite/PostCSS, semantic CSS tokens, dual Noir/Paper themes |
+| Styling | Tailwind CSS via Vite/PostCSS, semantic brand tokens, Paper/Noir themes, world accent colors |
 | Client State | Zustand 5 |
 | Server State | TanStack React Query v5 |
 | Backend | Supabase Postgres, Auth, RLS, Edge Functions |
@@ -156,6 +156,7 @@ npm run test:e2e
 | [OPENSAGA_RULES.md](./OPENSAGA_RULES.md) | Product rules, positioning, UX principles, design standards |
 | [CREATOR_STUDIO_PRD.md](./CREATOR_STUDIO_PRD.md) | Creator Studio product spec and phased roadmap |
 | [COPYWRITING_GUIDE.md](./COPYWRITING_GUIDE.md) | Brand voice, vocabulary, microcopy patterns |
+| [docs/brand](./docs/brand) | OpenSaga palette, Canon Loop status colors, and world accent rules |
 | [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) | Current readiness audit, risks, and launch checklist |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, data flow, AI layer, boundaries, and Creation DNA architecture decision |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution workflow and PR expectations |

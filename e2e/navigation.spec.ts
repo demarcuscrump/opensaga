@@ -6,6 +6,11 @@ test('landing page supports theme switching and exploration navigation', async (
   await expect(page.getByText('Forge Universes.')).toBeVisible();
   await expect(page.getByText('Govern Canon.')).toBeVisible();
 
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'paper');
+
+  await page.getByRole('button', { name: /Paper/i }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'noir');
+
   await page.getByRole('button', { name: /Noir/i }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'paper');
 

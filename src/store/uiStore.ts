@@ -3,6 +3,16 @@ import { persist } from 'zustand/middleware';
 
 type Theme = 'noir' | 'paper';
 
+const DEFAULT_THEME: Theme = 'paper';
+
+function applyTheme(theme: Theme) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+}
+
+applyTheme(DEFAULT_THEME);
+
 interface UIState {
   theme: Theme;
   isAISettingsOpen: boolean;
@@ -14,15 +24,15 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
-      theme: 'noir',
+      theme: DEFAULT_THEME,
       isAISettingsOpen: false,
       setTheme: (theme) => {
-        document.documentElement.setAttribute('data-theme', theme);
+        applyTheme(theme);
         set({ theme });
       },
       toggleTheme: () => {
         const next = get().theme === 'noir' ? 'paper' : 'noir';
-        document.documentElement.setAttribute('data-theme', next);
+        applyTheme(next);
         set({ theme: next });
       },
       setAISettingsOpen: (isOpen) => set({ isAISettingsOpen: isOpen }),
@@ -32,7 +42,7 @@ export const useUIStore = create<UIState>()(
       onRehydrateStorage: () => (state) => {
         // Apply persisted theme on page load
         if (state?.theme) {
-          document.documentElement.setAttribute('data-theme', state.theme);
+          applyTheme(state.theme);
         }
       },
     }

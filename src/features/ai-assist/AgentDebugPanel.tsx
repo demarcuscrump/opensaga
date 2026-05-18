@@ -39,13 +39,13 @@ export function AgentDebugPanel() {
           <span className="font-medium text-text-primary">Agent Runs</span>
           <span className="text-text-tertiary">({logs.length})</span>
           {runningCount > 0 && (
-            <span className="flex items-center gap-1 text-amber-400">
+            <span className="flex items-center gap-1 text-status-conflict">
               <Loader2 size={10} className="animate-spin" />
               {runningCount} active
             </span>
           )}
           {errorCount > 0 && (
-            <span className="flex items-center gap-1 text-red-400">
+            <span className="flex items-center gap-1 text-status-conflict">
               <XCircle size={10} />
               {errorCount} error{errorCount > 1 ? 's' : ''}
             </span>
@@ -75,15 +75,15 @@ export function AgentDebugPanel() {
               <div
                 key={log.id}
                 className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-[11px] ${
-                  log.status === 'error' ? 'bg-red-500/5 border border-red-500/10' :
-                  log.status === 'running' ? 'bg-amber-500/5 border border-amber-500/10' :
+                  log.status === 'error' ? 'bg-status-conflict/5 border border-status-conflict/10' :
+                  log.status === 'running' ? 'bg-status-proposal/5 border border-status-proposal/10' :
                   'bg-surface-elevated border border-border'
                 }`}
               >
                 {/* Status icon */}
-                {log.status === 'running' && <Loader2 size={11} className="text-amber-400 animate-spin shrink-0" />}
-                {log.status === 'success' && <CheckCircle2 size={11} className="text-green-400 shrink-0" />}
-                {log.status === 'error' && <XCircle size={11} className="text-red-400 shrink-0" />}
+                {log.status === 'running' && <Loader2 size={11} className="text-status-proposal animate-spin shrink-0" />}
+                {log.status === 'success' && <CheckCircle2 size={11} className="text-status-canon shrink-0" />}
+                {log.status === 'error' && <XCircle size={11} className="text-status-conflict shrink-0" />}
 
                 {/* Agent name */}
                 <span className="font-medium text-text-primary whitespace-nowrap">

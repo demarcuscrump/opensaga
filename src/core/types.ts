@@ -51,6 +51,7 @@ export interface World {
   name: string;
   description: string;
   heroImage: string;
+  accentColor?: string;
   genre: string[];
   status: WorldStatus;
   governance: GovernanceType;

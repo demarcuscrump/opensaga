@@ -41,8 +41,8 @@ export class AgentErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-            <AlertTriangle size={20} className="text-red-400" />
+          <div className="w-12 h-12 rounded-full bg-status-conflict/10 flex items-center justify-center">
+            <AlertTriangle size={20} className="text-status-conflict" />
           </div>
           <div>
             <h3 className="text-sm font-medium text-text-primary">Agent Error</h3>
@@ -50,7 +50,7 @@ export class AgentErrorBoundary extends React.Component<Props, State> {
               {this.props.fallbackMessage || 'Something went wrong with the AI agent. This won\'t affect your saved data.'}
             </p>
             {this.state.error && (
-              <p className="text-[10px] text-red-400/70 mt-2 font-mono max-w-sm truncate">
+              <p className="text-[10px] text-status-conflict/80 mt-2 font-mono max-w-sm truncate">
                 {this.state.error.message}
               </p>
             )}

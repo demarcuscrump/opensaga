@@ -678,7 +678,7 @@ export const CreatorStudioView = () => {
         <div className="p-3 border-t border-border">
           <button onClick={() => setShowSettings(!showSettings)} className="flex items-center justify-between w-full px-2 py-1" aria-label="Open AI provider settings" aria-expanded={showSettings}>
             <div className="flex items-center gap-2 text-xs text-text-secondary">
-              <div className={`w-2 h-2 rounded-full ${aiEngine.isConfigured() ? 'bg-green-400 animate-pulse' : 'bg-amber-400'}`} />
+              <div className={`w-2 h-2 rounded-full ${aiEngine.isConfigured() ? 'bg-status-canon animate-pulse' : 'bg-status-conflict'}`} />
               {aiStore.provider === 'mock' ? 'Mock Mode' : `${aiStore.provider} · ${aiStore.model || 'default'}`}
             </div>
             <Settings2 size={13} className="text-text-tertiary" />
@@ -726,12 +726,12 @@ export const CreatorStudioView = () => {
                         />
                         <button
                           onClick={clearCharImage}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-status-conflict text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X size={10} />
                         </button>
                         {visionResult && (
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-status-canon rounded-full flex items-center justify-center">
                             <CheckCircle2 size={10} className="text-white" />
                           </div>
                         )}
@@ -740,7 +740,7 @@ export const CreatorStudioView = () => {
                         <button
                           onClick={handleVisionAnalyze}
                           disabled={isAnalyzingImage || !agents.isConfigured}
-                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-medium hover:from-purple-500 hover:to-indigo-500 transition-all disabled:opacity-50 shadow-sm"
+                          className="flex items-center gap-2 px-4 py-2 bg-status-proposal text-white rounded-lg text-xs font-medium hover:bg-status-vote transition-all disabled:opacity-50"
                         >
                           {isAnalyzingImage ? (
                             <><Loader2 size={13} className="animate-spin" /> Analyzing image...</>
@@ -751,12 +751,12 @@ export const CreatorStudioView = () => {
                           )}
                         </button>
                         {visionResult && (
-                          <p className="text-[10px] text-green-400 mt-1.5">
+                          <p className="text-[10px] text-status-canon mt-1.5">
                             Fields auto-populated from image. Edit any field to customize.
                           </p>
                         )}
                         {!agents.isConfigured && (
-                          <p className="text-[10px] text-amber-400 mt-1.5">
+                          <p className="text-[10px] text-status-conflict mt-1.5">
                             Configure an AI provider in settings to use vision analysis.
                           </p>
                         )}
@@ -916,7 +916,7 @@ export const CreatorStudioView = () => {
                   <button
                     onClick={handleDeepenCharacter}
                     disabled={!character.name || isGenerating}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-500 transition-all disabled:opacity-50 shrink-0"
+                    className="flex items-center gap-2 px-4 py-2 bg-status-proposal text-white rounded-lg text-xs font-medium hover:bg-status-vote transition-all disabled:opacity-50 shrink-0"
                   >
                     {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
                     Deepen Character
@@ -944,7 +944,7 @@ export const CreatorStudioView = () => {
                       >
                         <Scroll size={12} />
                         <span className="truncate">{section.title}</span>
-                        {section.content && <div className="w-1.5 h-1.5 rounded-full bg-green-400 ml-auto shrink-0" />}
+                        {section.content && <div className="w-1.5 h-1.5 rounded-full bg-status-canon ml-auto shrink-0" />}
                       </button>
                     ))}
                   </div>
@@ -993,7 +993,7 @@ export const CreatorStudioView = () => {
                       setIsGenerating(false);
                     }}
                     disabled={!worldSections[activeSection].content || isGenerating}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-500 transition-all disabled:opacity-50 shrink-0"
+                    className="flex items-center gap-2 px-4 py-2 bg-status-vote text-white rounded-lg text-xs font-medium hover:bg-status-proposal transition-all disabled:opacity-50 shrink-0"
                   >
                     {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <GitMerge size={13} />}
                     Check Consistency
@@ -1016,9 +1016,9 @@ export const CreatorStudioView = () => {
                     </div>
                     {dnaReport && (
                       <span className={`px-3 py-1.5 rounded-full border text-[11px] font-semibold uppercase tracking-widest ${
-                        dnaReport.comboStatus === 'NEAR_MATCH' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' :
-                        dnaReport.comboStatus === 'RARE' ? 'border-purple-500/30 bg-purple-500/10 text-purple-300' :
-                        'border-green-500/30 bg-green-500/10 text-green-300'
+                        dnaReport.comboStatus === 'NEAR_MATCH' ? 'border-status-conflict/30 bg-status-conflict/10 text-status-conflict' :
+                        dnaReport.comboStatus === 'RARE' ? 'border-status-proposal/30 bg-status-proposal/10 text-status-proposal' :
+                        'border-status-canon/30 bg-status-canon/10 text-status-canon'
                       }`}>
                         {dnaReport.comboStatus.replace('_', ' ')}
                       </span>
@@ -1108,7 +1108,7 @@ export const CreatorStudioView = () => {
                           <div className="flex justify-end">
                             <button
                               onClick={handleSaveDnaToVault}
-                              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-500 transition-all"
+                              className="flex items-center gap-2 px-4 py-2 bg-status-canon text-brand-black rounded-lg text-xs font-medium hover:bg-brand-gold/80 transition-all"
                             >
                               <Save size={13} />
                               Save to DNA Vault
@@ -1302,34 +1302,34 @@ export const CreatorStudioView = () => {
                   {/* Score Badge */}
                   <div className="text-center">
                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
-                      canonReport.score >= 80 ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-                      canonReport.score >= 60 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                      'bg-red-500/10 text-red-400 border border-red-500/20'
+                      canonReport.score >= 80 ? 'bg-status-canon/10 text-status-canon border border-status-canon/20' :
+                      canonReport.score >= 60 ? 'bg-status-conflict/10 text-status-conflict border border-status-conflict/20' :
+                      'bg-status-rejected/10 text-status-rejected border border-status-rejected/20'
                     }`}>
                       {canonReport.score >= 80 ? <CheckCircle2 size={14} /> : <GitMerge size={14} />}
                       Canon Score: {canonReport.score}/100
                     </div>
                     <p className={`text-[10px] mt-1.5 font-medium uppercase tracking-widest ${
-                      canonReport.recommendation === 'APPROVE' ? 'text-green-400' :
-                      canonReport.recommendation === 'APPROVE_WITH_EDITS' ? 'text-amber-400' : 'text-red-400'
+                      canonReport.recommendation === 'APPROVE' ? 'text-status-canon' :
+                      canonReport.recommendation === 'APPROVE_WITH_EDITS' ? 'text-status-conflict' : 'text-status-rejected'
                     }`}>{canonReport.recommendation.replace(/_/g, ' ')}</p>
                   </div>
                   <p className="text-xs text-text-secondary leading-relaxed">{canonReport.summary}</p>
                   {canonReport.consistent.length > 0 && (
                     <div>
-                      <h4 className="text-[10px] font-semibold text-green-400 uppercase tracking-widest mb-1">✓ Consistent</h4>
+                      <h4 className="text-[10px] font-semibold text-status-canon uppercase tracking-widest mb-1">✓ Consistent</h4>
                       {canonReport.consistent.map((c, i) => <p key={i} className="text-xs text-text-secondary mb-0.5">• {c}</p>)}
                     </div>
                   )}
                   {canonReport.concerns.length > 0 && (
                     <div>
-                      <h4 className="text-[10px] font-semibold text-amber-400 uppercase tracking-widest mb-1">⚠ Concerns</h4>
+                      <h4 className="text-[10px] font-semibold text-status-conflict uppercase tracking-widest mb-1">⚠ Concerns</h4>
                       {canonReport.concerns.map((c, i) => <p key={i} className="text-xs text-text-secondary mb-0.5">• {c}</p>)}
                     </div>
                   )}
                   {canonReport.contradictions.length > 0 && (
                     <div>
-                      <h4 className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-1">✕ Contradictions</h4>
+                      <h4 className="text-[10px] font-semibold text-status-conflict uppercase tracking-widest mb-1">✕ Contradictions</h4>
                       {canonReport.contradictions.map((c, i) => <p key={i} className="text-xs text-text-secondary mb-0.5">• {c}</p>)}
                     </div>
                   )}
@@ -1338,7 +1338,7 @@ export const CreatorStudioView = () => {
               ) : deepenerResult ? (
                 <div className="space-y-4 animate-fade-in">
                   <div className="text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold bg-status-proposal/10 text-status-proposal border border-status-proposal/20">
                       <Sparkles size={14} />
                       Character Deepened
                     </div>
@@ -1377,9 +1377,9 @@ export const CreatorStudioView = () => {
                 <div className="space-y-4 animate-fade-in">
                   <div className="text-center">
                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ${
-                      dnaReport.comboStatus === 'NEAR_MATCH' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' :
-                      dnaReport.comboStatus === 'RARE' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' :
-                      'bg-green-500/10 text-green-300 border-green-500/20'
+                      dnaReport.comboStatus === 'NEAR_MATCH' ? 'bg-status-conflict/10 text-status-conflict border-status-conflict/20' :
+                      dnaReport.comboStatus === 'RARE' ? 'bg-status-proposal/10 text-status-proposal border-status-proposal/20' :
+                      'bg-status-canon/10 text-status-canon border-status-canon/20'
                     }`}>
                       <Dna size={14} />
                       {dnaReport.comboStatus.replace('_', ' ')}
@@ -1399,7 +1399,7 @@ export const CreatorStudioView = () => {
                   </div>
                   {dnaReport.similar.length > 0 && (
                     <div>
-                      <h4 className="text-[10px] font-semibold text-amber-300 uppercase tracking-widest mb-1">Closest Saved DNA</h4>
+                      <h4 className="text-[10px] font-semibold text-status-conflict uppercase tracking-widest mb-1">Closest Saved DNA</h4>
                       {dnaReport.similar.map(match => (
                         <p key={match.name} className="text-xs text-text-secondary mb-1">{match.name} · {Math.round(match.score * 100)}%</p>
                       ))}
@@ -1730,7 +1730,7 @@ function WorldSeedPreview({ sections }: { sections: WorldSeedSection[] }) {
       <div className="space-y-1.5">
         {sections.map(s => (
           <div key={s.key} className="flex items-center gap-2 text-xs">
-            <div className={`w-2 h-2 rounded-full ${s.content ? 'bg-green-400' : 'bg-surface-overlay border border-border'}`} />
+            <div className={`w-2 h-2 rounded-full ${s.content ? 'bg-status-canon' : 'bg-surface-overlay border border-border'}`} />
             <span className={s.content ? 'text-text-primary' : 'text-text-tertiary'}>{s.title}</span>
           </div>
         ))}

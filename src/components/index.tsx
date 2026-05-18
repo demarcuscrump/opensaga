@@ -1,16 +1,21 @@
 import React, { useEffect, useId } from 'react';
 import { Users, FileText, ThumbsUp, Globe, Check, X, AlertCircle } from 'lucide-react';
 import { World, Character, WorldStatus, ContentStatus } from '../core/types';
+import { getWorldAccent } from '../core/brand';
 import { Link } from 'react-router-dom';
 
 // --- Utility Components ---
 
-export const Badge: React.FC<{ label: string; color?: 'gold' | 'green' | 'red' | 'gray' }> = ({ label, color = 'gray' }) => {
+type BadgeTone = 'canon' | 'proposal' | 'vote' | 'archived' | 'conflict' | 'neutral';
+
+export const Badge: React.FC<{ label: string; color?: BadgeTone }> = ({ label, color = 'neutral' }) => {
   const colors = {
-    gold: 'bg-accent-muted text-accent-primary border-border-accent',
-    green: 'bg-status-canon/10 text-status-canon border-status-canon/20',
-    red: 'bg-status-rejected/10 text-status-rejected border-status-rejected/20',
-    gray: 'bg-surface-overlay text-text-secondary border-border',
+    canon: 'bg-status-canon/15 text-status-canon border-status-canon/35',
+    proposal: 'bg-status-proposal/10 text-status-proposal border-status-proposal/25',
+    vote: 'bg-status-vote/10 text-status-vote border-status-vote/25',
+    archived: 'bg-status-rejected/10 text-status-rejected border-status-rejected/25',
+    conflict: 'bg-status-conflict/10 text-status-conflict border-status-conflict/25',
+    neutral: 'bg-surface-overlay text-text-secondary border-border',
   };
 
   return (
@@ -21,16 +26,16 @@ export const Badge: React.FC<{ label: string; color?: 'gold' | 'green' | 'red' |
 };
 
 export const StatusBadge: React.FC<{ status: WorldStatus | ContentStatus }> = ({ status }) => {
-  let color: 'green' | 'gold' | 'red' | 'gray' = 'gray';
+  let color: BadgeTone = 'neutral';
   
   switch (status) {
-    case WorldStatus.OPEN: color = 'green'; break;
-    case WorldStatus.INVITE_ONLY: color = 'gold'; break;
-    case WorldStatus.CLOSED: color = 'red'; break;
-    case ContentStatus.CANON: color = 'green'; break;
-    case ContentStatus.PROPOSAL: color = 'gold'; break;
-    case ContentStatus.DRAFT: color = 'gray'; break;
-    case ContentStatus.REJECTED: color = 'red'; break;
+    case WorldStatus.OPEN: color = 'vote'; break;
+    case WorldStatus.INVITE_ONLY: color = 'canon'; break;
+    case WorldStatus.CLOSED: color = 'archived'; break;
+    case ContentStatus.CANON: color = 'canon'; break;
+    case ContentStatus.PROPOSAL: color = 'proposal'; break;
+    case ContentStatus.DRAFT: color = 'neutral'; break;
+    case ContentStatus.REJECTED: color = 'archived'; break;
   }
 
   return <Badge label={status.replace('_', ' ')} color={color} />;
@@ -177,10 +182,14 @@ export const Select: React.FC<SelectProps> = ({ label, options, className, id, .
 
 export const WorldCard: React.FC<{ world: World }> = ({ world }) => {
   const govLabel = world.governance === 'COMMUNITY_VOTE' ? 'Democracy' : world.governance === 'LOREKEEPER_COUNCIL' ? 'Council' : 'Creator Led';
+  const worldAccent = getWorldAccent(world);
 
   return (
     <Link to={`/world/${world.id}`} className="group block h-full">
-      <article className="h-full flex flex-col bg-surface-elevated border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-border-accent hover:-translate-y-0.5">
+      <article
+        className="h-full flex flex-col bg-surface-elevated border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-border-accent hover:-translate-y-0.5"
+        style={{ '--world-accent': worldAccent } as React.CSSProperties}
+      >
         {/* Hero Image */}
         <div className="relative h-44 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-surface-elevated via-transparent to-transparent z-10" />
@@ -192,6 +201,7 @@ export const WorldCard: React.FC<{ world: World }> = ({ world }) => {
           <div className="absolute top-3 right-3 z-20">
             <StatusBadge status={world.status} />
           </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 z-20 bg-world-accent" />
         </div>
 
         {/* Content */}
@@ -224,7 +234,7 @@ export const WorldCard: React.FC<{ world: World }> = ({ world }) => {
               </div>
             </div>
             
-            <div className="text-[11px] font-medium text-accent-primary">
+            <div className="text-[11px] font-medium text-world-accent">
               {govLabel}
             </div>
           </div>

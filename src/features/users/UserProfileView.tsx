@@ -64,7 +64,7 @@ export const UserProfileView = () => {
                 <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
               </div>
               <div className="absolute -bottom-1.5 -right-1.5 bg-surface-base p-0.5 rounded">
-                 <Badge label={`Lv. ${level}`} color="gold" />
+                 <Badge label={`Lv. ${level}`} color="canon" />
               </div>
             </div>
             

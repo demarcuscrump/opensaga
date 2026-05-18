@@ -8,6 +8,24 @@ module.exports = {
         serif: ['Instrument Serif', 'Georgia', 'serif'],
       },
       colors: {
+        brand: {
+          black: '#0B0B0D',
+          archive: '#FAF9F6',
+          parchment: '#F3EFE7',
+          mist: '#DCD8D0',
+          scribe: '#6E6A63',
+          gold: '#C6A15B',
+        },
+        loop: {
+          proposal: '#6D5DF6',
+          vote: '#3B82F6',
+          canon: '#C6A15B',
+          archived: '#9A948C',
+          conflict: '#D56A3A',
+        },
+        world: {
+          accent: 'var(--world-accent)',
+        },
         surface: {
           base: 'var(--surface-base)',
           elevated: 'var(--surface-elevated)',
@@ -25,10 +43,12 @@ module.exports = {
           tertiary: 'var(--text-tertiary)',
         },
         status: {
-          canon: '#4ADE80',
-          proposal: '#A3A3A3',
-          rejected: '#F87171',
-          draft: '#525252',
+          canon: '#C6A15B',
+          proposal: '#6D5DF6',
+          vote: '#3B82F6',
+          rejected: '#9A948C',
+          conflict: '#D56A3A',
+          draft: '#DCD8D0',
         },
         border: {
           DEFAULT: 'var(--border-default)',

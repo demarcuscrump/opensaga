@@ -11,6 +11,7 @@ import { worldsApi } from '../../services/api.worlds';
 import { charactersApi } from '../../services/api.characters';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import type { World, Character } from '../../core/types';
+import { getWorldAccent } from '../../core/brand';
 import { useAIStore } from '../../store/aiStore';
 import type { ProposalAnalysis } from '../../features/ai-assist/agents/schemas';
 
@@ -134,8 +135,13 @@ export const WorldHubView = () => {
     );
   }
 
+  const worldAccent = getWorldAccent(world);
+
   return (
-    <div className="min-h-screen bg-surface-base animate-fade-in pb-20">
+    <div
+      className="min-h-screen bg-surface-base animate-fade-in pb-20"
+      style={{ '--world-accent': worldAccent } as React.CSSProperties}
+    >
       {/* Hero Section */}
       <div className="relative h-72 w-full overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-surface-base via-surface-base/60 to-surface-base/10 z-20" />
@@ -153,7 +159,7 @@ export const WorldHubView = () => {
               <h1 className="font-serif text-4xl md:text-5xl text-text-primary mb-3">{world.name}</h1>
               <div className="flex flex-wrap gap-2">
                 {world.genre.map(g => (
-                  <span key={g} className="px-2 py-0.5 bg-surface-overlay/80 backdrop-blur-sm border border-border rounded text-[11px] text-text-secondary">
+                  <span key={g} className="px-2 py-0.5 bg-surface-overlay/80 backdrop-blur-sm border border-border rounded text-[11px] text-world-accent">
                     {g}
                   </span>
                 ))}
@@ -166,8 +172,8 @@ export const WorldHubView = () => {
                   disabled={isToggling}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200 ${
                     isMember
-                      ? 'border-border text-text-secondary hover:border-red-500/50 hover:text-red-400'
-                      : 'border-accent-primary text-accent-primary hover:bg-accent-primary hover:text-surface-base'
+                      ? 'border-border text-text-secondary hover:border-status-conflict/50 hover:text-status-conflict'
+                      : 'border-world-accent text-world-accent hover:bg-world-accent hover:text-surface-base'
                   }`}
                 >
                   <Users size={14} />
@@ -226,7 +232,7 @@ export const WorldHubView = () => {
                       <div className="text-[10px] text-text-tertiary uppercase tracking-widest mt-1">Canon Entries</div>
                     </div>
                     <div className="p-4 bg-surface-elevated border border-border rounded-xl text-center">
-                      <div className="text-2xl font-serif text-accent-primary">{world.votingThreshold}%</div>
+                      <div className="text-2xl font-serif text-world-accent">{world.votingThreshold}%</div>
                       <div className="text-[10px] text-text-tertiary uppercase tracking-widest mt-1">Vote Threshold</div>
                     </div>
                     <div className="p-4 bg-surface-elevated border border-border rounded-xl text-center">
@@ -332,7 +338,7 @@ export const WorldHubView = () => {
                                 <div>
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-[10px] uppercase tracking-widest text-text-tertiary font-medium">{proposal.type}</span>
-                                    {isExpired && <span className="text-[10px] uppercase tracking-widest text-amber-400 font-medium">Voting Ended</span>}
+                                    {isExpired && <span className="text-[10px] uppercase tracking-widest text-status-rejected font-medium">Voting Ended</span>}
                                   </div>
                                   <h4 className="font-serif text-base text-text-primary">{proposal.data?.name || 'Untitled Proposal'}</h4>
                                   {proposal.justification && (
@@ -355,16 +361,16 @@ export const WorldHubView = () => {
                                   </div>
                                   <div className="h-2 bg-surface-overlay rounded-full overflow-hidden flex">
                                     <div
-                                      className="h-full bg-green-500 transition-all duration-500"
+                                      className="h-full bg-status-vote transition-all duration-500"
                                       style={{ width: `${tally.total > 0 ? (tally.up / tally.total) * 100 : 0}%` }}
                                     />
                                     <div
-                                      className="h-full bg-red-500 transition-all duration-500"
+                                      className="h-full bg-status-conflict transition-all duration-500"
                                       style={{ width: `${tally.total > 0 ? (tally.down / tally.total) * 100 : 0}%` }}
                                     />
                                   </div>
                                   <div className="flex items-center gap-1 mt-1">
-                                    <div className={`h-1 w-1 rounded-full ${tally.percentage >= world.votingThreshold ? 'bg-green-400' : 'bg-red-400'}`} />
+                                    <div className={`h-1 w-1 rounded-full ${tally.percentage >= world.votingThreshold ? 'bg-status-canon' : 'bg-status-conflict'}`} />
                                     <span className="text-[10px] text-text-tertiary">
                                       {world.votingThreshold}% threshold {tally.percentage >= world.votingThreshold ? 'met' : `needs ${world.votingThreshold - tally.percentage}% more`}
                                     </span>
@@ -380,8 +386,8 @@ export const WorldHubView = () => {
                                     disabled={votingEntity === proposal.id}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                                       tally?.userVote === 'UP'
-                                        ? 'border-green-500/50 bg-green-500/10 text-green-400'
-                                        : 'border-border text-text-secondary hover:border-green-500/30 hover:text-green-400'
+                                        ? 'border-status-vote/50 bg-status-vote/10 text-status-vote'
+                                        : 'border-border text-text-secondary hover:border-status-vote/30 hover:text-status-vote'
                                     }`}
                                   >
                                     <ThumbsUp size={12} />
@@ -392,8 +398,8 @@ export const WorldHubView = () => {
                                     disabled={votingEntity === proposal.id}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                                       tally?.userVote === 'DOWN'
-                                        ? 'border-red-500/50 bg-red-500/10 text-red-400'
-                                        : 'border-border text-text-secondary hover:border-red-500/30 hover:text-red-400'
+                                        ? 'border-status-conflict/50 bg-status-conflict/10 text-status-conflict'
+                                        : 'border-border text-text-secondary hover:border-status-conflict/30 hover:text-status-conflict'
                                     }`}
                                   >
                                     <ThumbsDown size={12} />
@@ -414,8 +420,8 @@ export const WorldHubView = () => {
                                   <div className="flex items-center gap-2 mb-2">
                                     <span className="text-[10px] font-semibold text-accent-primary uppercase tracking-widest">AI Analysis</span>
                                     <span className={`text-[10px] font-semibold uppercase tracking-widest ${
-                                      proposalAnalyses[proposal.id].recommendation === 'STRONG_YES' || proposalAnalyses[proposal.id].recommendation === 'YES' ? 'text-green-400' :
-                                      proposalAnalyses[proposal.id].recommendation === 'NEEDS_WORK' ? 'text-amber-400' : 'text-red-400'
+                                      proposalAnalyses[proposal.id].recommendation === 'STRONG_YES' || proposalAnalyses[proposal.id].recommendation === 'YES' ? 'text-status-canon' :
+                                      proposalAnalyses[proposal.id].recommendation === 'NEEDS_WORK' ? 'text-status-conflict' : 'text-status-rejected'
                                     }`}>{proposalAnalyses[proposal.id].recommendation.replace(/_/g, ' ')}</span>
                                   </div>
                                   <p className="text-xs text-text-secondary leading-relaxed">{proposalAnalyses[proposal.id].voterSummary}</p>
@@ -459,7 +465,7 @@ export const WorldHubView = () => {
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-sm text-text-secondary">Voting Threshold</span>
-                  <span className="text-sm text-accent-primary font-medium">{world.votingThreshold}%</span>
+                  <span className="text-sm text-world-accent font-medium">{world.votingThreshold}%</span>
                 </div>
                 <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-sm text-text-secondary">Citizens</span>

@@ -6,12 +6,11 @@ export const LandingView = () => {
   return (
     <div className="min-h-[90vh] flex flex-col items-center justify-center animate-fade-in relative px-6">
       
-      {/* Background glow — warm gold, subtle */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent-primary/5 blur-[150px] rounded-full pointer-events-none animate-breathe" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-gold/10 blur-[150px] rounded-full pointer-events-none animate-breathe" />
 
       <div className="text-center max-w-3xl relative z-10">
         {/* Tagline chip */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border-accent bg-accent-muted text-sm text-accent-primary mb-10">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-gold/40 bg-brand-gold/10 text-sm text-brand-gold mb-10">
           <Sparkles size={14} />
           <span className="font-medium">Open source · Community governed</span>
         </div>
