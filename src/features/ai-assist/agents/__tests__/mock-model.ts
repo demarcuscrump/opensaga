@@ -84,6 +84,25 @@ export const MOCK_VISION_ANALYSIS = {
   worldHints: 'Cyberpunk or sci-fi noir setting. Megacity backdrop with neon and rain.',
 };
 
+export const MOCK_CREATION_DNA_REPORT = {
+  idea: 'A retired hitman protects his adopted daughter from an underground fight ring.',
+  genre: ['Grounded Combat', 'Cyberpunk/Tech-Noir'],
+  emotion: ['Found Family', 'Redemption'],
+  scale: 'Street-level',
+  power: 'Tech-driven',
+  vibe: ['Sleek/Neon', 'Brutal', 'Gritty'],
+  anchors: ['Cyberpunk: Edgerunners', 'Akudama Drive', 'John Wick'],
+  similar: [],
+  comboStatus: 'UNTESTED',
+  comboNotes: 'Strong familiar revenge-action DNA, but the adopted-family angle can carry it.',
+  differentiators: [
+    'Make the daughter the strategist rather than the victim.',
+    'Tie every fight to a moral cost in the city.',
+    'Give the fight ring a public-facing cultural role.',
+  ],
+  pitch: 'A burned-out killer and his brilliant adopted daughter turn a neon fight empire against itself.',
+};
+
 /**
  * Per-agent mock model factories.
  * Each returns a model that always outputs the correct mock for that agent.
@@ -93,3 +112,4 @@ export const mockWorldArchitect = () => mockModelForResponse(MOCK_ARCHITECT_REPO
 export const mockCharacterDeepener = () => mockModelForResponse(MOCK_DEEPENER_RESULT);
 export const mockProposalAnalyst = () => mockModelForResponse(MOCK_PROPOSAL_ANALYSIS);
 export const mockVisionAnalyzer = () => mockModelForResponse(MOCK_VISION_ANALYSIS);
+export const mockCreationDna = () => mockModelForResponse(MOCK_CREATION_DNA_REPORT);

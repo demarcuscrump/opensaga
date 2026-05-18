@@ -208,6 +208,7 @@ Every world has a Bible. Every proposal is judged against it. The Bible is the i
 | **Character Forge** | Generate full character profiles | Description/concept + World Bible context | Name, archetype, backstory, powers, flaws, motivations, relationships |
 | **Lore Crafter** | Write lore entries | Topic + World Bible context | Historical events, technology descriptions, faction writeups |
 | **Brainstorm** | Generate plot ideas | Situation/premise | Plot hooks, twists, story arcs, faction conflicts |
+| **Creation DNA** | Classify originality before canonization | Raw idea/premise + local DNA vault | Controlled tags, anchors, near-match note, differentiators, pitch |
 | **Canon Check** | Consistency validation | Proposal text + World Bible | Contradiction report, compatibility score, suggested edits |
 | **World Seed** | Generate entire world foundation | Genre + tone + 3 keywords | Name, description, genre tags, initial World Bible, starter factions |
 | **Relationship Mapper** | Map character connections | 2+ characters | Relationship type, dynamic, potential conflicts |

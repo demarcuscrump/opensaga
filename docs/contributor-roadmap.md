@@ -79,6 +79,7 @@ Good medium-sized tasks:
 - Relationship Mapper MVP
 - Power System Generator MVP
 - Species/Race Builder MVP
+- Shared Creation DNA vault backed by Supabase/Postgres vector search
 - Markdown export for generated characters and lore
 - Richer draft gallery
 

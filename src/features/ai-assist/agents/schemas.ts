@@ -59,6 +59,86 @@ export const ProposalAnalysisSchema = z.object({
 
 export type ProposalAnalysis = z.infer<typeof ProposalAnalysisSchema>;
 
+// ─── Creation DNA ───────────────────────────────────────────────────
+
+export const CREATION_DNA_GENRES = [
+  'Grounded Combat',
+  'Superpowered Battle',
+  'Epic Adventure',
+  'Dark Fantasy/Horror',
+  'Cyberpunk/Tech-Noir',
+  'Psychological Thriller',
+  'Stylish Action',
+  'Slice-of-Life w/ Twist',
+] as const;
+
+export const CREATION_DNA_EMOTIONS = [
+  'Revenge',
+  'Redemption',
+  'Ambition',
+  'Found Family',
+  'Isolation/Identity',
+  'Survival',
+  'Legacy',
+  'Freedom vs System',
+  'Love',
+  'Grief',
+] as const;
+
+export const CREATION_DNA_SCALES = [
+  'Personal',
+  'Street-level',
+  'City/Regional',
+  'National/Continental',
+  'World/Cosmic',
+] as const;
+
+export const CREATION_DNA_POWERS = [
+  'Pure Skill',
+  'Defined System',
+  'Mystical/Spiritual',
+  'Tech-driven',
+  'Hybrid',
+  'None',
+] as const;
+
+export const CREATION_DNA_VIBES = [
+  'Gritty',
+  'Sleek/Neon',
+  'Stylish',
+  'Brutal',
+  'Mythic',
+  'Cozy',
+  'Surreal',
+  'Retro',
+  'Minimalist',
+  'Chaotic',
+] as const;
+
+export const CreationDnaSimilarSchema = z.object({
+  name: z.string().describe('Vault entry name or idea title'),
+  score: z.number().min(0).max(1).describe('0-1 similarity score where 1 is closest'),
+  pitch: z.string().optional().describe('Saved one-line pitch when available'),
+});
+
+export const CreationDnaReportSchema = z.object({
+  idea: z.string().min(1).describe('Original idea being analyzed'),
+  genre: z.array(z.enum(CREATION_DNA_GENRES)).min(1).max(2).describe('Primary genre tags'),
+  emotion: z.array(z.enum(CREATION_DNA_EMOTIONS)).min(1).max(2).describe('Primary emotional engine tags'),
+  scale: z.enum(CREATION_DNA_SCALES).describe('Narrative scope'),
+  power: z.enum(CREATION_DNA_POWERS).describe('Power or capability logic'),
+  vibe: z.array(z.enum(CREATION_DNA_VIBES)).min(1).max(3).describe('Surface tone and texture tags'),
+  anchors: z.array(z.string()).min(1).max(3).describe('Comparable anime, comics, or media anchors'),
+  similar: z.array(CreationDnaSimilarSchema).default([]).describe('Closest saved DNA cards'),
+  comboStatus: z.enum(['UNTESTED', 'UNIQUE', 'RARE', 'NEAR_MATCH']).default('UNTESTED'),
+  comboNotes: z.string().describe('Plain-language originality note'),
+  differentiators: z.array(z.string()).max(3).describe('Ways to sharpen or differentiate the idea'),
+  pitch: z.string().min(1).describe('Punchy one-line pitch'),
+});
+
+export type CreationDnaReport = z.infer<typeof CreationDnaReportSchema>;
+export type CreationDnaSimilar = z.infer<typeof CreationDnaSimilarSchema>;
+
 // ─── Agent State Schemas ────────────────────────────────────────────
 
 export const AgentContextSchema = z.object({

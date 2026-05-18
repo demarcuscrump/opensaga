@@ -50,15 +50,16 @@ It is still pre-public-beta. Before production launch, the project needs a hoste
 - Offline/demo mode fallback when Supabase environment variables are not configured.
 
 ### Creator Studio
-- Multi-tool creative workspace with Character Forge, World Seed, Lore Crafter, Brainstorm, and Canon Check.
+- Multi-tool creative workspace with Character Forge, World Seed, Creation DNA, Lore Crafter, Brainstorm, and Canon Check.
 - Draft persistence through local storage.
+- Creation DNA originality lens with controlled tags, human review, and local vault comparison.
 - Character export options.
 - Image analysis path for character references.
 - Agent debug logging and streaming hooks.
 
 ### BYOK AI
 - Provider-agnostic AI engine with OpenAI, Anthropic, OpenRouter, Ollama, and mock adapters.
-- Lightweight agent layer for canon checks, world architecture, character deepening, proposal analysis, and vision analysis.
+- Lightweight agent layer for canon checks, world architecture, character deepening, proposal analysis, creation DNA, and vision analysis.
 - User API keys stay in the browser's local storage and are never sent to OpenSaga servers. Local storage is convenient, but not a hardened secret vault; production deployments should pair this with a strong CSP and XSS review.
 
 ### Quality Gates
@@ -172,7 +173,7 @@ npm run test:e2e
 - [x] World discovery, world hub, proposals, voting UI, profiles
 - [x] Supabase schema, RLS policies, API layer, auth context
 - [x] Proposal vote tallying and reputation update logic
-- [x] Creator Studio MVP with five active creation tools
+- [x] Creator Studio MVP with six active creation tools
 - [x] BYOK AI adapters for OpenAI, Anthropic, OpenRouter, Ollama, and mock mode
 - [x] Lightweight agent workflows with structured Zod output validation
 - [x] Tailwind Vite/PostCSS pipeline with CDN removed

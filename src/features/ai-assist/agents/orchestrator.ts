@@ -16,15 +16,17 @@ import { buildWorldArchitectGraph } from './world-architect';
 import { buildCharacterDeepenerGraph } from './character-deepener';
 import { buildProposalAnalystGraph } from './proposal-analyst';
 import { buildVisionAnalyzerGraph, type VisionAnalysis } from './vision-analyzer';
+import { buildCreationDnaGraph } from './creation-dna';
 import type { CanonReport } from './schemas';
 import type { ArchitectReport } from './schemas';
 import type { DeepenerResult } from './schemas';
 import type { ProposalAnalysis } from './schemas';
+import type { CreationDnaReport } from './schemas';
 import { AgentLogger } from './logger';
 import { RateLimiter } from './rate-limiter';
 
 // Re-export types for consumers
-export type { CanonReport, ArchitectReport, DeepenerResult, ProposalAnalysis, VisionAnalysis };
+export type { CanonReport, ArchitectReport, DeepenerResult, ProposalAnalysis, VisionAnalysis, CreationDnaReport };
 
 // ─── Orchestrator ───────────────────────────────────────────────────
 
@@ -178,6 +180,29 @@ export class AgentOrchestrator {
       });
       AgentLogger.completeRun(runId, { suggestedName: result.analysis?.suggestedName, archetype: result.analysis?.archetype });
       return result.analysis!;
+    } catch (err: any) {
+      AgentLogger.failRun(runId, err);
+      throw err;
+    }
+  }
+
+  async analyzeCreationDna(opts: {
+    idea: string;
+  }): Promise<CreationDnaReport> {
+    const model = await this.getModel();
+    this.assertRateLimit();
+    const runId = AgentLogger.startRun('creation_dna', { ideaLength: opts.idea.length });
+    try {
+      const graph = buildCreationDnaGraph(model);
+      const result = await graph.invoke({
+        idea: opts.idea,
+        rawOutput: '',
+        report: null,
+        retryCount: 0,
+        error: null,
+      });
+      AgentLogger.completeRun(runId, { comboStatus: result.report?.comboStatus, pitch: result.report?.pitch });
+      return result.report!;
     } catch (err: any) {
       AgentLogger.failRun(runId, err);
       throw err;

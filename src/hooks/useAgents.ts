@@ -18,6 +18,7 @@ import {
   type DeepenerResult,
   type ProposalAnalysis,
   type VisionAnalysis,
+  type CreationDnaReport,
 } from '../features/ai-assist/agents/orchestrator';
 
 interface AgentState<T> {
@@ -36,6 +37,7 @@ export function useAgents() {
   const [analystState, setAnalystState] = useState<AgentState<ProposalAnalysis>>({ data: null, isRunning: false, error: null });
 
   const [visionState, setVisionState] = useState<AgentState<VisionAnalysis>>({ data: null, isRunning: false, error: null });
+  const [creationDnaState, setCreationDnaState] = useState<AgentState<CreationDnaReport>>({ data: null, isRunning: false, error: null });
 
   const [creationPipelineRunning, setCreationPipelineRunning] = useState(false);
   const [reviewPipelineRunning, setReviewPipelineRunning] = useState(false);
@@ -166,6 +168,20 @@ export function useAgents() {
     }
   }, [orchestrator]);
 
+  const analyzeCreationDna = useCallback(async (
+    idea: string
+  ) => {
+    setCreationDnaState({ data: null, isRunning: true, error: null });
+    try {
+      const result = await orchestrator.analyzeCreationDna({ idea });
+      setCreationDnaState({ data: result, isRunning: false, error: null });
+      return result;
+    } catch (e: any) {
+      setCreationDnaState({ data: null, isRunning: false, error: e.message });
+      return null;
+    }
+  }, [orchestrator]);
+
   return {
     // Individual agents
     checkCanon,
@@ -173,6 +189,7 @@ export function useAgents() {
     deepenCharacter,
     analyzeProposal,
     analyzeCharacterImage,
+    analyzeCreationDna,
 
     // Pipelines
     runCreationPipeline,
@@ -184,6 +201,7 @@ export function useAgents() {
     characterDeepener: deepenerState,
     proposalAnalyst: analystState,
     visionAnalyzer: visionState,
+    creationDna: creationDnaState,
 
     // Pipeline running
     isCreationPipelineRunning: creationPipelineRunning,

@@ -8,6 +8,7 @@ import {
   ArchitectReportSchema,
   DeepenerResultSchema,
   ProposalAnalysisSchema,
+  CreationDnaReportSchema,
 } from '../schemas';
 
 describe('CanonReportSchema', () => {
@@ -134,5 +135,41 @@ describe('ProposalAnalysisSchema', () => {
   it('rejects missing voterSummary', () => {
     const { voterSummary, ...invalid } = valid;
     expect(() => ProposalAnalysisSchema.parse(invalid)).toThrow();
+  });
+});
+
+describe('CreationDnaReportSchema', () => {
+  const valid = {
+    idea: 'A retired hitman protects his adopted daughter from an underground fight ring.',
+    genre: ['Grounded Combat', 'Cyberpunk/Tech-Noir'],
+    emotion: ['Found Family', 'Redemption'],
+    scale: 'Street-level',
+    power: 'Tech-driven',
+    vibe: ['Sleek/Neon', 'Brutal', 'Gritty'],
+    anchors: ['Cyberpunk: Edgerunners', 'Akudama Drive'],
+    similar: [],
+    comboStatus: 'UNTESTED',
+    comboNotes: 'Needs vault comparison.',
+    differentiators: ['Make the daughter the strategist.'],
+    pitch: 'A burned-out killer and his daughter turn the fight ring against itself.',
+  };
+
+  it('accepts valid controlled-vocab DNA cards', () => {
+    expect(() => CreationDnaReportSchema.parse(valid)).not.toThrow();
+  });
+
+  it('rejects tags outside the controlled vocab', () => {
+    expect(() => CreationDnaReportSchema.parse({ ...valid, genre: ['Random Genre'] })).toThrow();
+  });
+
+  it('rejects too many vibe tags', () => {
+    expect(() => CreationDnaReportSchema.parse({ ...valid, vibe: ['Gritty', 'Stylish', 'Retro', 'Chaotic'] })).toThrow();
+  });
+
+  it('defaults similarity fields for raw agent output', () => {
+    const { similar, comboStatus, ...rawAgentOutput } = valid;
+    const parsed = CreationDnaReportSchema.parse(rawAgentOutput);
+    expect(parsed.similar).toEqual([]);
+    expect(parsed.comboStatus).toBe('UNTESTED');
   });
 });

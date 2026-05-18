@@ -2,16 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, Save, PenTool, Settings2, CheckCircle2, Copy,
   User, FileText, GitMerge, Lightbulb, Globe2, Wand2,
-  ChevronRight, Send, X, Eye, EyeOff, Loader2, Scroll,
-  Upload, ImageIcon, Trash2
+  X, Eye, Loader2, Scroll, Upload, Dna
 } from 'lucide-react';
-import { Button } from '../../components';
 import { useAIStore, useAIEngine } from '../../store/aiStore';
 import type { AIProvider } from './AIEngine';
 import { worldsApi } from '../../services/api.worlds';
 import type { World } from '../../core/types';
 import { useAgents } from '../../hooks/useAgents';
-import type { CanonReport, DeepenerResult } from './agents/schemas';
+import type { CanonReport, CreationDnaReport, DeepenerResult } from './agents/schemas';
 import type { VisionAnalysis } from './agents/orchestrator';
 import { AgentDebugPanel } from './AgentDebugPanel';
 import { AgentErrorBoundary } from './AgentErrorBoundary';
@@ -20,7 +18,7 @@ import { RateLimiter } from './agents/rate-limiter';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-type StudioTool = 'character' | 'worldseed' | 'lore' | 'brainstorm' | 'canoncheck';
+type StudioTool = 'character' | 'worldseed' | 'lore' | 'brainstorm' | 'canoncheck' | 'dna';
 
 interface CharacterDraft {
   name: string;
@@ -50,6 +48,13 @@ interface WorldSeedSection {
   content: string;
 }
 
+interface CreationDnaVaultEntry extends CreationDnaReport {
+  id: string;
+  name: string;
+  humanNotes: string;
+  savedAt: string;
+}
+
 const EMPTY_CHARACTER: CharacterDraft = {
   name: '', aliases: '', archetype: '', species: '', age: '', pronouns: '',
   appearance: '', distinguishingFeatures: '', attire: '',
@@ -72,6 +77,7 @@ const WORLD_SEED_TEMPLATE: WorldSeedSection[] = [
 // ─── Auto-save ───────────────────────────────────────────────────────
 
 const DRAFT_KEY = 'opensaga-studio-drafts';
+const DNA_VAULT_KEY = 'opensaga-creation-dna-vault';
 
 function saveDraftToStorage(tool: StudioTool, data: any) {
   try {
@@ -88,11 +94,136 @@ function loadDraftFromStorage(tool: StudioTool): any | null {
   } catch { return null; }
 }
 
+function loadDnaVaultFromStorage(): CreationDnaVaultEntry[] {
+  try {
+    const stored = localStorage.getItem(DNA_VAULT_KEY);
+    const parsed = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDnaVaultToStorage(entries: CreationDnaVaultEntry[]) {
+  try {
+    localStorage.setItem(DNA_VAULT_KEY, JSON.stringify(entries.slice(0, 50)));
+  } catch { /* localStorage full or unavailable */ }
+}
+
+function makeDnaName(idea: string) {
+  const clean = idea.replace(/\s+/g, ' ').trim();
+  return clean.length > 46 ? `${clean.slice(0, 43)}...` : clean || 'Untitled DNA';
+}
+
+function overlapScore(a: string[], b: string[]) {
+  const left = new Set(a);
+  const right = new Set(b);
+  const shared = [...left].filter(tag => right.has(tag)).length;
+  const total = new Set([...a, ...b]).size || 1;
+  return shared / total;
+}
+
+function scoreDnaSimilarity(report: CreationDnaReport, entry: CreationDnaVaultEntry) {
+  return Math.min(1,
+    overlapScore(report.genre, entry.genre) * 0.28 +
+    overlapScore(report.emotion, entry.emotion) * 0.24 +
+    overlapScore(report.vibe, entry.vibe) * 0.2 +
+    (report.scale === entry.scale ? 0.14 : 0) +
+    (report.power === entry.power ? 0.14 : 0)
+  );
+}
+
+function isRareDnaCombo(report: CreationDnaReport) {
+  return (
+    (report.vibe.includes('Cozy') && report.vibe.includes('Brutal')) ||
+    (report.genre.includes('Slice-of-Life w/ Twist') && report.scale === 'World/Cosmic') ||
+    (report.emotion.includes('Love') && report.power === 'Tech-driven' && report.vibe.includes('Minimalist'))
+  );
+}
+
+function evaluateDnaAgainstVault(report: CreationDnaReport, vault: CreationDnaVaultEntry[]): CreationDnaReport {
+  const similar = vault
+    .map(entry => ({
+      name: entry.name,
+      score: Number(scoreDnaSimilarity(report, entry).toFixed(2)),
+      pitch: entry.pitch,
+    }))
+    .filter(match => match.score >= 0.45)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  if (similar[0]?.score >= 0.72) {
+    return {
+      ...report,
+      similar,
+      comboStatus: 'NEAR_MATCH',
+      comboNotes: `Near-match found in your DNA vault: ${similar[0].name}. Use the differentiators before saving.`,
+    };
+  }
+
+  if (isRareDnaCombo(report)) {
+    return {
+      ...report,
+      similar,
+      comboStatus: 'RARE',
+      comboNotes: 'Rare DNA combo. Lean into the contrast and make the rules concrete.',
+    };
+  }
+
+  return {
+    ...report,
+    similar,
+    comboStatus: 'UNIQUE',
+    comboNotes: similar.length > 0
+      ? 'Distinct from saved DNA, with a few adjacent ideas worth checking.'
+      : 'Unique against your local DNA vault.',
+  };
+}
+
+function buildOfflineCreationDnaReport(idea: string): CreationDnaReport {
+  const text = idea.toLowerCase();
+  const genre: CreationDnaReport['genre'] = text.match(/neon|cyber|tech|augmented/)
+    ? ['Cyberpunk/Tech-Noir', 'Grounded Combat']
+    : text.match(/fight|hitman|assassin|combat/)
+      ? ['Grounded Combat', 'Stylish Action']
+      : ['Epic Adventure'];
+  const emotion: CreationDnaReport['emotion'] = text.match(/daughter|family|friend|crew/)
+    ? ['Found Family', 'Redemption']
+    : text.match(/revenge|betray/)
+      ? ['Revenge', 'Survival']
+      : ['Ambition'];
+  const scale: CreationDnaReport['scale'] = text.match(/cosmic|world|planet/) ? 'World/Cosmic' : text.match(/city|kingdom/) ? 'City/Regional' : 'Street-level';
+  const power: CreationDnaReport['power'] = text.match(/magic|spirit|curse/) ? 'Mystical/Spiritual' : text.match(/cyber|tech|augmented/) ? 'Tech-driven' : 'Pure Skill';
+  const vibe: CreationDnaReport['vibe'] = text.match(/neon|cyber/)
+    ? ['Sleek/Neon', 'Brutal', 'Gritty']
+    : ['Stylish', 'Gritty'];
+
+  return {
+    idea,
+    genre,
+    emotion,
+    scale,
+    power,
+    vibe,
+    anchors: ['Cyberpunk: Edgerunners', 'Akudama Drive', 'John Wick'],
+    similar: [],
+    comboStatus: 'UNTESTED',
+    comboNotes: 'Offline DNA draft. Connect an AI provider for deeper anchors and differentiators.',
+    differentiators: [
+      'Move one expected role into the opposite character.',
+      'Give the central power or skill a cost that changes relationships.',
+      'Anchor the conflict in a personal ritual, place, or rule only this world has.',
+    ],
+    pitch: makeDnaName(idea),
+  };
+}
+
 // ─── Tools Config ────────────────────────────────────────────────────
 
 const TOOLS: { id: StudioTool; icon: any; label: string; desc: string }[] = [
   { id: 'character', icon: User, label: 'Character Forge', desc: 'Deep profiles, stats, and backstories.' },
   { id: 'worldseed', icon: Globe2, label: 'World Seed', desc: 'Structured World Bible editor.' },
+  { id: 'dna', icon: Dna, label: 'Creation DNA', desc: 'Tag originality before it becomes canon.' },
   { id: 'lore', icon: FileText, label: 'Lore Crafter', desc: 'Historical events, mythology, rules.' },
   { id: 'brainstorm', icon: Lightbulb, label: 'Brainstorm', desc: 'Plot hooks, faction ideas, arcs.' },
   { id: 'canoncheck', icon: GitMerge, label: 'Canon Check', desc: 'Validate against World Bible.' },
@@ -119,6 +250,10 @@ export const CreatorStudioView = () => {
   const [brainstormPrompt, setBrainstormPrompt] = useState('');
   const [canonCheckInput, setCanonCheckInput] = useState('');
   const [canonCheckBible, setCanonCheckBible] = useState('');
+  const [dnaIdea, setDnaIdea] = useState('');
+  const [dnaReport, setDnaReport] = useState<CreationDnaReport | null>(null);
+  const [dnaReviewNotes, setDnaReviewNotes] = useState('');
+  const [dnaVault, setDnaVault] = useState<CreationDnaVaultEntry[]>([]);
   const [output, setOutput] = useState<string | null>(null);
   const [canonReport, setCanonReport] = useState<CanonReport | null>(null);
   const [deepenerResult, setDeepenerResult] = useState<DeepenerResult | null>(null);
@@ -149,6 +284,10 @@ export const CreatorStudioView = () => {
     if (charDraft) setCharacter(charDraft);
     const worldDraft = loadDraftFromStorage('worldseed');
     if (worldDraft) setWorldSections(worldDraft);
+    const dnaDraft = loadDraftFromStorage('dna');
+    if (dnaDraft?.idea) setDnaIdea(dnaDraft.idea);
+    if (dnaDraft?.reviewNotes) setDnaReviewNotes(dnaDraft.reviewNotes);
+    setDnaVault(loadDnaVaultFromStorage());
   }, []);
 
   // Auto-save every 30s
@@ -156,14 +295,15 @@ export const CreatorStudioView = () => {
     const interval = setInterval(() => {
       saveDraftToStorage('character', character);
       saveDraftToStorage('worldseed', worldSections);
+      saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
       setLastSaved(new Date().toLocaleTimeString());
     }, 30000);
     return () => clearInterval(interval);
-  }, [character, worldSections]);
+  }, [character, worldSections, dnaIdea, dnaReviewNotes]);
 
   // Keyboard shortcuts (per CREATOR_STUDIO_PRD.md §Keyboard Shortcuts)
   useEffect(() => {
-    const toolKeys: Record<string, StudioTool> = { '1': 'character', '2': 'lore', '3': 'brainstorm', '4': 'canoncheck', '5': 'worldseed' };
+    const toolKeys: Record<string, StudioTool> = { '1': 'character', '2': 'lore', '3': 'brainstorm', '4': 'canoncheck', '5': 'worldseed', '6': 'dna' };
     const handler = (e: KeyboardEvent) => {
       const isMod = e.metaKey || e.ctrlKey;
       // Cmd+S — Save draft
@@ -171,6 +311,7 @@ export const CreatorStudioView = () => {
         e.preventDefault();
         saveDraftToStorage('character', character);
         saveDraftToStorage('worldseed', worldSections);
+        saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
         setLastSaved(new Date().toLocaleTimeString());
       }
       // Cmd+Enter — Generate (trigger active AI action)
@@ -180,14 +321,16 @@ export const CreatorStudioView = () => {
         else if (activeTool === 'canoncheck') handleCanonCheck();
         else if (activeTool === 'brainstorm') handleBrainstorm();
         else if (activeTool === 'lore') handleLoreGenerate();
+        else if (activeTool === 'dna') handleCreationDnaAnalyze();
       }
       // Cmd+Shift+P — Submit as Proposal (placeholder — shows toast)
       if (isMod && e.shiftKey && e.key === 'p') {
         e.preventDefault();
         setOutput('Submit as Proposal flow coming soon. Your draft has been saved.');
         saveDraftToStorage('character', character);
+        saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
       }
-      // Cmd+1-5 — Switch tool
+      // Cmd+1-6 — Switch tool
       if (isMod && toolKeys[e.key]) {
         e.preventDefault();
         setActiveTool(toolKeys[e.key]);
@@ -199,7 +342,7 @@ export const CreatorStudioView = () => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [character, worldSections, showSettings, activeTool, isGenerating]);
+  }, [character, worldSections, dnaIdea, dnaReviewNotes, showSettings, activeTool, isGenerating, dnaVault]);
 
   const updateChar = (field: keyof CharacterDraft, value: string) => {
     setCharacter(prev => ({ ...prev, [field]: value }));
@@ -382,9 +525,53 @@ export const CreatorStudioView = () => {
     setIsGenerating(false);
   };
 
+  const handleCreationDnaAnalyze = async () => {
+    const idea = dnaIdea.trim();
+    if (!idea) return;
+    setIsGenerating(true);
+    setDnaReport(null);
+    setCanonReport(null);
+    setDeepenerResult(null);
+    try {
+      const agentResult = agents.isConfigured ? await agents.analyzeCreationDna(idea) : null;
+      const baseReport = agentResult || buildOfflineCreationDnaReport(idea);
+      const evaluated = evaluateDnaAgainstVault(baseReport, dnaVault);
+      setDnaReport(evaluated);
+      setOutput(
+        `CREATION DNA — ${evaluated.comboStatus.replace('_', ' ')}\n\n` +
+        `Pitch: ${evaluated.pitch}\n\n` +
+        `Tags: ${evaluated.genre.join(' + ')} · ${evaluated.emotion.join(' + ')} · ${evaluated.scale} · ${evaluated.power}\n\n` +
+        `${evaluated.comboNotes}\n\n` +
+        `Differentiators:\n${evaluated.differentiators.map(item => `• ${item}`).join('\n')}`
+      );
+      saveDraftToStorage('dna', { idea, reviewNotes: dnaReviewNotes });
+    } catch (err: any) {
+      setOutput(`Creation DNA could not run. ${err.message || 'Try again in a moment.'}`);
+    }
+    setIsGenerating(false);
+  };
+
+  const handleSaveDnaToVault = () => {
+    if (!dnaReport) return;
+    const entry: CreationDnaVaultEntry = {
+      ...dnaReport,
+      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}`,
+      name: makeDnaName(dnaReport.idea),
+      humanNotes: dnaReviewNotes,
+      savedAt: new Date().toISOString(),
+    };
+    const next = [entry, ...dnaVault.filter(item => item.id !== entry.id)].slice(0, 50);
+    setDnaVault(next);
+    saveDnaVaultToStorage(next);
+    saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
+    setLastSaved(new Date().toLocaleTimeString());
+    setOutput(`Saved "${entry.name}" to the local Creation DNA vault.`);
+  };
+
   const handleSaveDraft = () => {
     saveDraftToStorage('character', character);
     saveDraftToStorage('worldseed', worldSections);
+    saveDraftToStorage('dna', { idea: dnaIdea, reviewNotes: dnaReviewNotes });
     setLastSaved(new Date().toLocaleTimeString());
   };
 
@@ -742,6 +929,161 @@ export const CreatorStudioView = () => {
               </div>
             )}
 
+            {/* ──── CREATION DNA ──────────────────────────────── */}
+            {activeTool === 'dna' && (
+              <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
+                <div className="max-w-6xl mx-auto space-y-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-serif text-lg text-text-primary flex items-center gap-2">
+                        <Dna size={17} className="text-accent-primary" />
+                        Creation DNA
+                      </h3>
+                      <p className="text-xs text-text-tertiary mt-1">Genre, emotion, vibe, scale, power, anchors, and originality review.</p>
+                    </div>
+                    {dnaReport && (
+                      <span className={`px-3 py-1.5 rounded-full border text-[11px] font-semibold uppercase tracking-widest ${
+                        dnaReport.comboStatus === 'NEAR_MATCH' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' :
+                        dnaReport.comboStatus === 'RARE' ? 'border-purple-500/30 bg-purple-500/10 text-purple-300' :
+                        'border-green-500/30 bg-green-500/10 text-green-300'
+                      }`}>
+                        {dnaReport.comboStatus.replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5">
+                    <div className="space-y-5">
+                      <div className="bg-surface-elevated border border-border rounded-xl p-4">
+                        <label htmlFor="creation-dna-idea" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1.5 block">Concept</label>
+                        <textarea
+                          id="creation-dna-idea"
+                          value={dnaIdea}
+                          onChange={e => setDnaIdea(e.target.value)}
+                          placeholder="A retired hitman is dragged back in when his adopted daughter gets trapped in a neon underground fight ring run by augmented gangs."
+                          className="w-full min-h-36 bg-surface-overlay border border-border rounded-lg px-3 py-3 text-sm text-text-primary placeholder-text-tertiary resize-y focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30 leading-relaxed"
+                        />
+                        <div className="flex items-center justify-between gap-3 mt-3">
+                          <p className="text-[11px] text-text-tertiary">{agents.isConfigured ? 'Structured agent mode' : 'Offline DNA draft mode'}</p>
+                          <button
+                            onClick={handleCreationDnaAnalyze}
+                            disabled={!dnaIdea.trim() || isGenerating}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-accent-primary text-surface-base rounded-lg text-sm font-medium hover:bg-accent-hover transition-all disabled:opacity-50"
+                          >
+                            {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Dna size={14} />}
+                            Analyze DNA
+                          </button>
+                        </div>
+                      </div>
+
+                      {dnaReport && (
+                        <div className="bg-surface-elevated border border-border rounded-xl p-4 space-y-4 animate-fade-in">
+                          <div className="grid md:grid-cols-2 gap-3">
+                            <DnaTagGroup label="Genre" tags={dnaReport.genre} />
+                            <DnaTagGroup label="Emotion" tags={dnaReport.emotion} />
+                            <DnaTagGroup label="Vibe" tags={dnaReport.vibe} />
+                            <DnaTagGroup label="Logic" tags={[dnaReport.scale, dnaReport.power]} />
+                          </div>
+
+                          <div>
+                            <label htmlFor="creation-dna-pitch" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1.5 block">Pitch</label>
+                            <input
+                              id="creation-dna-pitch"
+                              value={dnaReport.pitch}
+                              onChange={e => setDnaReport(prev => prev ? { ...prev, pitch: e.target.value } : prev)}
+                              className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                            />
+                          </div>
+
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-2">Anchors</div>
+                              <div className="flex flex-wrap gap-2">
+                                {dnaReport.anchors.map(anchor => <span key={anchor} className="px-2.5 py-1 rounded-full bg-surface-overlay border border-border text-xs text-text-secondary">{anchor}</span>)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-2">Vault Check</div>
+                              <p className="text-xs text-text-secondary leading-relaxed">{dnaReport.comboNotes}</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-2">Differentiators</div>
+                            <div className="space-y-2">
+                              {dnaReport.differentiators.map((item, i) => (
+                                <div key={i} className="flex gap-2 text-xs text-text-secondary bg-surface-overlay border border-border rounded-lg px-3 py-2">
+                                  <span className="text-accent-primary font-semibold">{i + 1}</span>
+                                  <span>{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label htmlFor="creation-dna-review" className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1.5 block">Human Review Notes</label>
+                            <textarea
+                              id="creation-dna-review"
+                              value={dnaReviewNotes}
+                              onChange={e => setDnaReviewNotes(e.target.value)}
+                              placeholder="Approve, edit direction, or personal twist to preserve before saving."
+                              rows={3}
+                              className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-tertiary resize-none focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30 leading-relaxed"
+                            />
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button
+                              onClick={handleSaveDnaToVault}
+                              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-500 transition-all"
+                            >
+                              <Save size={13} />
+                              Save to DNA Vault
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-surface-elevated border border-border rounded-xl p-4 h-fit">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-text-primary">DNA Vault</h4>
+                        <span className="text-[10px] text-text-tertiary">{dnaVault.length} saved</span>
+                      </div>
+                      {dnaVault.length === 0 ? (
+                        <div className="h-40 flex flex-col items-center justify-center text-text-tertiary text-center space-y-2">
+                          <Dna size={20} strokeWidth={1} />
+                          <p className="text-xs">Saved DNA cards appear here.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {dnaVault.slice(0, 6).map(entry => (
+                            <button
+                              key={entry.id}
+                              onClick={() => {
+                                setDnaIdea(entry.idea);
+                                setDnaReport(evaluateDnaAgainstVault(entry, dnaVault.filter(item => item.id !== entry.id)));
+                                setDnaReviewNotes(entry.humanNotes);
+                              }}
+                              className="w-full text-left p-3 rounded-lg border border-border bg-surface-overlay hover:border-border-accent transition-colors"
+                            >
+                              <div className="text-xs font-medium text-text-primary line-clamp-1">{entry.name}</div>
+                              <div className="text-[10px] text-text-tertiary mt-1 line-clamp-2">{entry.pitch}</div>
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {[...entry.genre, entry.scale].slice(0, 3).map(tag => (
+                                  <span key={tag} className="px-1.5 py-0.5 rounded bg-accent-muted text-[9px] text-accent-primary">{tag}</span>
+                                ))}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ──── LORE CRAFTER ───────────────────────────────── */}
             {activeTool === 'lore' && (
               <div className="flex-1 flex flex-col p-6">
@@ -938,6 +1280,44 @@ export const CreatorStudioView = () => {
                   )}
                   <button onClick={() => { setDeepenerResult(null); setOutput(null); }} className="text-[10px] text-text-tertiary hover:text-text-primary mt-2">← Clear result</button>
                 </div>
+              ) : dnaReport ? (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="text-center">
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ${
+                      dnaReport.comboStatus === 'NEAR_MATCH' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' :
+                      dnaReport.comboStatus === 'RARE' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' :
+                      'bg-green-500/10 text-green-300 border-green-500/20'
+                    }`}>
+                      <Dna size={14} />
+                      {dnaReport.comboStatus.replace('_', ' ')}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1">Pitch</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed">{dnaReport.pitch}</p>
+                  </div>
+                  <DnaTagGroup label="Genre" tags={dnaReport.genre} compact />
+                  <DnaTagGroup label="Emotion" tags={dnaReport.emotion} compact />
+                  <DnaTagGroup label="Vibe" tags={dnaReport.vibe} compact />
+                  <DnaTagGroup label="Scale + Power" tags={[dnaReport.scale, dnaReport.power]} compact />
+                  <div>
+                    <h4 className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1">Vault Check</h4>
+                    <p className="text-xs text-text-secondary leading-relaxed">{dnaReport.comboNotes}</p>
+                  </div>
+                  {dnaReport.similar.length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-semibold text-amber-300 uppercase tracking-widest mb-1">Closest Saved DNA</h4>
+                      {dnaReport.similar.map(match => (
+                        <p key={match.name} className="text-xs text-text-secondary mb-1">{match.name} · {Math.round(match.score * 100)}%</p>
+                      ))}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-[10px] font-semibold text-accent-primary uppercase tracking-widest mb-1">Differentiators</h4>
+                    {dnaReport.differentiators.map((item, i) => <p key={i} className="text-xs text-text-secondary mb-1">→ {item}</p>)}
+                  </div>
+                  <button onClick={() => { setDnaReport(null); setOutput(null); }} className="text-[10px] text-text-tertiary hover:text-text-primary mt-2">← Clear DNA card</button>
+                </div>
               ) : output ? (
                 <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
                   {output}
@@ -1019,6 +1399,24 @@ function FieldGroup({ label, value, onChange, placeholder, className, multiline,
           className="w-full bg-surface-overlay border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:border-border-accent focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
         />
       )}
+    </div>
+  );
+}
+
+function DnaTagGroup({ label, tags, compact }: { label: string; tags: string[]; compact?: boolean }) {
+  return (
+    <div>
+      <div className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-1.5">{label}</div>
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map(tag => (
+          <span
+            key={tag}
+            className={`${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'} rounded-full bg-accent-muted border border-border-accent text-accent-primary`}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

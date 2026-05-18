@@ -12,17 +12,20 @@ import { buildWorldArchitectGraph } from '../world-architect';
 import { buildCharacterDeepenerGraph } from '../character-deepener';
 import { buildProposalAnalystGraph } from '../proposal-analyst';
 import { buildVisionAnalyzerGraph } from '../vision-analyzer';
+import { buildCreationDnaGraph } from '../creation-dna';
 import {
   mockCanonKeeper,
   mockWorldArchitect,
   mockCharacterDeepener,
   mockProposalAnalyst,
   mockVisionAnalyzer,
+  mockCreationDna,
   MOCK_CANON_REPORT,
   MOCK_ARCHITECT_REPORT,
   MOCK_DEEPENER_RESULT,
   MOCK_PROPOSAL_ANALYSIS,
   MOCK_VISION_ANALYSIS,
+  MOCK_CREATION_DNA_REPORT,
 } from './mock-model';
 import { AgentLogger } from '../logger';
 
@@ -167,6 +170,29 @@ describe('Vision Analyzer Agent', () => {
     expect(result.analysis!.species).toBe(MOCK_VISION_ANALYSIS.species);
     expect(result.analysis!.appearance).toContain('angular features');
     expect(result.analysis!.worldHints).toContain('Cyberpunk');
+  });
+});
+
+describe('Creation DNA Agent', () => {
+  const model = mockCreationDna();
+
+  it('returns a validated CreationDnaReport with controlled tags', async () => {
+    const graph = buildCreationDnaGraph(model);
+    const result = await graph.invoke({
+      idea: 'A retired hitman protects his adopted daughter from an underground fight ring.',
+      rawOutput: '',
+      report: null,
+      retryCount: 0,
+      error: null,
+    });
+
+    expect(result.report).not.toBeNull();
+    expect(result.report!.idea).toBe(MOCK_CREATION_DNA_REPORT.idea);
+    expect(result.report!.genre).toContain('Grounded Combat');
+    expect(result.report!.emotion).toContain('Found Family');
+    expect(result.report!.comboStatus).toBe('UNTESTED');
+    expect(result.report!.differentiators).toHaveLength(3);
+    expect(result.report!.pitch).toContain('neon fight empire');
   });
 });
 

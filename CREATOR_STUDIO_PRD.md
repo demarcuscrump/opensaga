@@ -22,7 +22,7 @@ The Creator Studio is OpenSaga's **integrated creative workspace** — a dedicat
 | Layout | Multi-panel Studio MVP with tool panel, canvas, inspector-style support panels, and status affordances | Full workspace with refined toolbars, canvas, and inspector |
 | Character creation | Character Forge with structured fields, tabs, draft persistence, proposal/export path | Visual builder + stats + relationships + appearance + AI assist |
 | World creation | World Seed tool and structured world-generation path | Structured Bible editor with sections, factions, geography, rules |
-| AI tools | 5 active tools: Character Forge, World Seed, Lore Crafter, Brainstorm, Canon Check | 8 real AI tools with structured output, World Bible context injection |
+| AI tools | 6 active tools: Character Forge, World Seed, Creation DNA, Lore Crafter, Brainstorm, Canon Check | 8+ real AI tools with structured output, World Bible context injection |
 | Asset management | Local drafts and image analysis path | Gallery of created characters, worlds, lore entries, drafts |
 | Export | Character export and proposal submission path | Export to proposal, markdown, JSON, and portable packages |
 | Collaboration | World membership exists; draft collaboration not implemented | Share drafts, invite co-creators, version history |
@@ -200,6 +200,18 @@ Freeform AI-assisted ideation. Not structured creation — pure creative explora
 - **Feature:** Pin ideas to a "board" for later use
 - **Feature:** "Develop this further" button on any brainstorm output
 - **Feature:** Connect brainstorm outputs to specific characters/worlds
+
+---
+
+### Module 4A: Creation DNA
+
+Structured originality lens for concepts before they become characters, worlds, or proposals.
+
+- **Input:** A raw idea or premise
+- **Output:** Controlled genre, emotion, scale, power, vibe, anchor, differentiator, and pitch fields
+- **Feature:** Local DNA vault comparison for near-match detection
+- **Feature:** Human review notes before saving to the vault
+- **Production path:** Move local vault comparison to Supabase/Postgres vector search when hosted collaboration needs shared originality checks
 
 ---
 
