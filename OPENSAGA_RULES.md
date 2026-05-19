@@ -14,6 +14,22 @@
 - **Category:** Creative tooling / Collaborative worldbuilding / Community-governed fiction
 - **License:** MIT (code) — content created by users belongs to them
 - **Revenue model:** Open-core. Free self-hosted. Paid cloud hosting (OpenSaga Cloud) + premium Creator Studio AI features (usage-based BYOK or hosted credits).
+- **Vision source:** See [`docs/vision.md`](./docs/vision.md) for the open-core strategy, creator ownership stance, and long-term LangGraph agent-service roadmap.
+
+### 1.1 Strategic North Star
+
+OpenSaga should become the trusted infrastructure layer for collaborative fictional canon.
+
+The core system stays open source so communities can inspect proposal rules, voting logic, governance models, export paths, and ownership boundaries. The business opportunity is OpenSaga Cloud: managed hosting, private collaboration, storage, backups, moderation, support, and premium AI orchestration.
+
+The guiding boundary:
+
+```text
+OpenSaga Core is open.
+OpenSaga Cloud is paid.
+Advanced AI orchestration can be premium.
+Creator content stays creator-owned.
+```
 
 ---
 

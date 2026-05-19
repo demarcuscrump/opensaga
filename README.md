@@ -24,6 +24,8 @@ OpenSaga is a community-governed worldbuilding platform. A creator starts a Worl
 
 The long-term goal is a production-ready open-source platform for anime, manga, comic, tabletop RPG, writer, and fandom communities.
 
+For the full product vision, open-core strategy, creator ownership stance, and long-term AI architecture, see [docs/vision.md](./docs/vision.md).
+
 ---
 
 ## Current Status
@@ -153,6 +155,7 @@ npm run test:e2e
 
 | Document | Description |
 |---|---|
+| [docs/vision.md](./docs/vision.md) | Product vision, open-core strategy, creator ownership, and LangGraph roadmap |
 | [OPENSAGA_RULES.md](./OPENSAGA_RULES.md) | Product rules, positioning, UX principles, design standards |
 | [CREATOR_STUDIO_PRD.md](./CREATOR_STUDIO_PRD.md) | Creator Studio product spec and phased roadmap |
 | [COPYWRITING_GUIDE.md](./COPYWRITING_GUIDE.md) | Brand voice, vocabulary, microcopy patterns |
