@@ -63,6 +63,7 @@ export type ProposalAnalysis = z.infer<typeof ProposalAnalysisSchema>;
 
 export const CREATION_DNA_GENRES = [
   'Grounded Combat / Martial Realism',
+  'Sports / Competitive Team Drama',
   'Superpowered Battle',
   'Epic Adventure / World-Saga',
   'Dark Fantasy / Horror',
@@ -87,6 +88,11 @@ export const CREATION_DNA_GENRE_GUIDE: ReadonlyArray<{
     tag: 'Grounded Combat / Martial Realism',
     description: 'Technique, training, physical consequence, and tactical fighting carry the drama more than supernatural spectacle.',
     anchors: ['Baki', 'Kengan Ashura', 'Hajime no Ippo', 'The Fable'],
+  },
+  {
+    tag: 'Sports / Competitive Team Drama',
+    description: 'Training arcs, rivalries, tournament pressure, team chemistry, discipline, and talent-versus-work stakes drive the story.',
+    anchors: ['Haikyuu!!', 'Blue Lock', 'Kuroko\'s Basketball', 'Run with the Wind'],
   },
   {
     tag: 'Superpowered Battle',

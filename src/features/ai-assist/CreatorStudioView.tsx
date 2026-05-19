@@ -205,7 +205,9 @@ function buildOfflineCreationDnaReport(idea: string): CreationDnaReport {
   const text = idea.toLowerCase();
   const genre: CreationDnaReport['genre'] = text.match(/neon|cyber|tech|augmented/)
     ? ['Cyberpunk / Tech-Noir', 'Grounded Combat / Martial Realism']
-    : text.match(/fight|hitman|assassin|combat/)
+    : text.match(/sport|team|match|tournament|rival|athlete|soccer|football|basketball|baseball|volleyball|boxing|race|coach|training/)
+      ? ['Sports / Competitive Team Drama']
+      : text.match(/fight|hitman|assassin|combat/)
       ? ['Grounded Combat / Martial Realism', 'Stylish Action']
       : text.match(/creature|monster|companion|partner/)
         ? ['Creature / Companion Adventure']

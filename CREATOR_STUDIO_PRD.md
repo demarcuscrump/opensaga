@@ -239,6 +239,7 @@ Structured originality lens for concepts before they become characters, worlds, 
 | Genre | Grounded Use |
 |---|---|
 | Grounded Combat / Martial Realism | Technique, training, physical consequence, and tactical fighting carry the drama more than supernatural spectacle. |
+| Sports / Competitive Team Drama | Training arcs, rivalries, tournaments, team chemistry, discipline, and talent-versus-work pressure carry the emotional stakes. |
 | Superpowered Battle | Defined abilities, rivals, counters, tournaments, and escalating fights create the core engine. |
 | Epic Adventure / World-Saga | A wide journey through factions, history, cultures, and locations where the world grows alongside the cast. |
 | Dark Fantasy / Horror | Demons, curses, body horror, moral dread, and brutal costs make the world feel dangerous and unforgiving. |

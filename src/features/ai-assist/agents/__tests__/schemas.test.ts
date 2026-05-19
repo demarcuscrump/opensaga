@@ -176,7 +176,8 @@ describe('CreationDnaReportSchema', () => {
   });
 
   it('documents every default genre with a grounded description', () => {
-    expect(CREATION_DNA_GENRE_GUIDE).toHaveLength(12);
+    expect(CREATION_DNA_GENRE_GUIDE).toHaveLength(13);
+    expect(CREATION_DNA_GENRE_GUIDE.map(genre => genre.tag)).toContain('Sports / Competitive Team Drama');
     for (const genre of CREATION_DNA_GENRE_GUIDE) {
       expect(genre.description.length).toBeGreaterThan(40);
       expect(genre.anchors.length).toBeGreaterThanOrEqual(2);
