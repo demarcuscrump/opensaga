@@ -10,9 +10,10 @@ An open-source collaborative universe-building platform where communities create
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vite.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![CI](https://github.com/demarcuscrump/opensaga/actions/workflows/ci.yml/badge.svg)](https://github.com/demarcuscrump/opensaga/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Alpha%20Production%20Track-orange)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen)]()
+[![Status](https://img.shields.io/badge/Status-Alpha%20Production%20Track-orange)](#current-status)
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen)](CONTRIBUTING.md)
 
 </div>
 
@@ -155,6 +156,8 @@ npm run test:e2e
 
 | Document | Description |
 |---|---|
+| [docs/PRODUCT_BRIEF.md](./docs/PRODUCT_BRIEF.md) | Problem, audience, use cases, solution, boundaries, and open-source status |
+| [docs/DESIGN_SPEC.md](./docs/DESIGN_SPEC.md) | Canon archive palette, status tokens, world accent rules, and accessibility |
 | [docs/vision.md](./docs/vision.md) | Product vision, open-core strategy, creator ownership, and LangGraph roadmap |
 | [OPENSAGA_RULES.md](./OPENSAGA_RULES.md) | Product rules, positioning, UX principles, design standards |
 | [CREATOR_STUDIO_PRD.md](./CREATOR_STUDIO_PRD.md) | Creator Studio product spec and phased roadmap |

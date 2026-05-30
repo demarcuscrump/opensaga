@@ -270,17 +270,17 @@ Bible Sections Referenced: Technology, Factions, History
 
 COMPATIBILITY SCORE: 87/100
 
-✅ CONSISTENT:
+CONSISTENT:
 - Character's cybernetic augmentations align with established tech rules
 - Faction affiliation (Red Syndicate) matches existing lore
 - Time period references are accurate
 
-⚠️ MINOR CONCERNS:
+MINOR CONCERNS:
 - Character claims to be "the only survivor of Sector 7 collapse" 
   but existing Canon character "The Fixer" also survived Sector 7.
   SUGGESTION: Rephrase to "one of the few survivors"
 
-❌ CONTRADICTIONS:
+CONTRADICTIONS:
 - None found
 
 RECOMMENDATION: Approve with minor edit to backstory.

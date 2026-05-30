@@ -242,7 +242,7 @@ VISITOR    → "Wanderer" — "Exploring the multiverse. Not yet committed."
 > "Welcome to OpenSaga, a collaborative platform enabling teams to co-create fictional universes with integrated governance workflows and AI-assisted content generation."
 
 ### Too Casual (Wrong)
-> "Hey! 👋 Ready to build some awesome worlds with your friends? Let's gooo! 🚀"
+> "Hey! Ready to build some awesome worlds with your friends? Let's gooo!"
 
 ### Too Epic (Wrong)
 > "BEHOLD, MORTAL! THE INFINITE TAPESTRY OF CREATION AWAITS YOUR DIVINE HAND! FORGE WORLDS THAT SHAKE THE VERY FOUNDATIONS OF REALITY!"
